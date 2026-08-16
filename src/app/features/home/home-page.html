@@ -1,0 +1,87 @@
+<header class="page-header">
+  <h1>¡Hola de nuevo! 👋</h1>
+  <p>Este es tu centro de control. Enfócate en lo que toca repasar hoy.</p>
+</header>
+
+<!-- Motivation: study streak heatmap -->
+<p-card styleClass="dash-card">
+  <div class="dash-card__title">
+    <h2>Tu racha de estudio</h2>
+    <small>Últimos meses</small>
+  </div>
+  <app-study-heatmap />
+</p-card>
+
+<!-- Key metrics -->
+<section class="metrics">
+  <p-card styleClass="metric metric--accent">
+    <div class="stat">
+      <i class="pi pi-bolt"></i>
+      <div>
+        <span class="stat__value">0</span>
+        <span class="stat__label">Para repasar hoy</span>
+      </div>
+    </div>
+  </p-card>
+
+  <p-card>
+    <div class="stat">
+      <i class="pi pi-sparkles"></i>
+      <div>
+        <span class="stat__value">0</span>
+        <span class="stat__label">Nuevas aprendidas</span>
+      </div>
+    </div>
+  </p-card>
+
+  <p-card>
+    <div class="stat">
+      <i class="pi pi-chart-line"></i>
+      <div>
+        <span class="stat__value">—</span>
+        <span class="stat__label">Tasa de retención</span>
+      </div>
+    </div>
+  </p-card>
+</section>
+
+<!-- Decks (subjects) -->
+<div class="decks-header">
+  <h2>Tus materias</h2>
+  <p-button
+    label="Nueva materia"
+    icon="pi pi-plus"
+    severity="secondary"
+    [outlined]="true"
+    routerLink="/subjects"
+  />
+</div>
+
+@if (subjectsStore.count() === 0) {
+  <p-card>
+    <div class="empty">
+      Aún no tienes materias. Crea la primera para empezar a estudiar.
+    </div>
+  </p-card>
+} @else {
+  <section class="decks">
+    @for (subject of subjectsStore.subjects(); track subject.id) {
+      <p-card styleClass="deck">
+        <div class="deck__body">
+          <h2 class="deck__name">{{ subject.title }}</h2>
+          @if (subject.description) {
+            <p class="deck__desc">{{ subject.description }}</p>
+          }
+          <div class="deck__pills">
+            <span class="pill pill--review">0 para repasar</span>
+            <span class="pill pill--new">0 nuevas</span>
+          </div>
+        </div>
+      </p-card>
+    }
+  </section>
+}
+
+<div class="actions">
+  <p-button label="Empezar a repasar" icon="pi pi-play" routerLink="/review" />
+</div>

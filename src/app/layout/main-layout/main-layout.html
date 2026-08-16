@@ -1,0 +1,57 @@
+<div class="layout" [class.layout--collapsed]="collapsed()">
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <i class="pi pi-sparkles"></i>
+      @if (!collapsed()) {
+        <span class="sidebar__brand-text">Active Recall</span>
+      }
+    </div>
+
+    <nav class="sidebar__nav">
+      @for (item of navItems; track item.path) {
+        <a
+          class="nav-item"
+          [routerLink]="item.path"
+          routerLinkActive="nav-item--active"
+          [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+          [title]="item.label"
+        >
+          <i [class]="item.icon"></i>
+          @if (!collapsed()) {
+            <span>{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__footer">
+      <button
+        class="sidebar__action"
+        type="button"
+        (click)="theme.toggle()"
+        [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'"
+      >
+        <i class="pi" [class.pi-sun]="theme.isDark()" [class.pi-moon]="!theme.isDark()"></i>
+        @if (!collapsed()) {
+          <span>{{ theme.isDark() ? 'Modo claro' : 'Modo oscuro' }}</span>
+        }
+      </button>
+
+      <button
+        class="sidebar__action"
+        type="button"
+        (click)="toggle()"
+        title="Contraer menú"
+      >
+        <i class="pi" [class.pi-angle-left]="!collapsed()" [class.pi-angle-right]="collapsed()"></i>
+        @if (!collapsed()) {
+          <span>Contraer</span>
+        }
+      </button>
+    </div>
+  </aside>
+
+  <main class="content">
+    <router-outlet />
+  </main>
+</div>

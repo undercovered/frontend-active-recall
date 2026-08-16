@@ -1,0 +1,13 @@
+<div class="heatmap">
+  @for (week of columns(); track $index) {
+    <div class="heatmap__col">
+      @for (cell of week; track cell.date) {
+        <span
+          class="heatmap__cell"
+          [attr.data-level]="cell.level"
+          [title]="cell.date + ' · ' + cell.count + ' repasos'"
+        ></span>
+      }
+    </div>
+  }
+</div>

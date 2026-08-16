@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+.dash-card__title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+:host ::ng-deep .metric--accent {
+  border-left: 4px solid var(--app-primary);
+}
+
+.decks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 2rem 0 1rem;
+}
+
+.decks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.deck {
+  height: 100%;
+}
+
+.deck__name {
+  margin: 0 0 0.35rem;
+}
+
+.deck__desc {
+  margin: 0 0 1rem;
+  color: var(--app-muted);
+  font-size: 1rem;
+}
+
+.deck__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: #fff;
+
+  &--review {
+    background: var(--feedback-hard); /* orange — needs attention */
+  }
+
+  &--new {
+    background: var(--feedback-good); /* blue — new / neutral positive */
+  }
+}

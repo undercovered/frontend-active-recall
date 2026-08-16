@@ -1,0 +1,35 @@
+.heatmap {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 0.25rem 0;
+
+  &__col {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__cell {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: var(--app-border);
+
+    &[data-level='0'] {
+      background: color-mix(in srgb, var(--app-border) 55%, transparent);
+    }
+    &[data-level='1'] {
+      background: color-mix(in srgb, var(--app-primary) 30%, transparent);
+    }
+    &[data-level='2'] {
+      background: color-mix(in srgb, var(--app-primary) 55%, transparent);
+    }
+    &[data-level='3'] {
+      background: color-mix(in srgb, var(--app-primary) 78%, transparent);
+    }
+    &[data-level='4'] {
+      background: var(--app-primary);
+    }
+  }
+}

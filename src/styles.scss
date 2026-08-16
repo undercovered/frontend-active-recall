@@ -1,0 +1,229 @@
+/* ============================================================
+   Active Recall — Global styles & design tokens
+   ============================================================ */
+@use 'primeicons/primeicons.css';
+
+/* ---------- Design tokens ---------- */
+:root {
+  /* Backgrounds & surfaces (light mode) */
+  --app-bg: #f3f4f6; /* cool subtle gray — reduces screen glare */
+  --app-surface: #ffffff; /* pure white cards → depth & focus */
+  --app-surface-alt: #f9fafb;
+  --app-border: #d1d5db;
+
+  /* Text hierarchy (light mode) */
+  --app-heading: #111827; /* almost black — H1/H2 */
+  --app-text: #374151; /* dark gray — body (softer than black) */
+  --app-muted: #6b7280; /* medium gray — labels / metadata */
+
+  /* Brand */
+  --app-primary: #4f46e5; /* Indigo — core actions */
+  --app-primary-contrast: #ffffff;
+
+  /* Study review feedback (used by the review module) */
+  --feedback-again: #ef4444; /* Coral red — "Otra vez" (fail) */
+  --feedback-hard: #f97316; /* Orange — "Difícil" */
+  --feedback-good: #3b82f6; /* Light blue — "Bien / Normal" */
+  --feedback-easy: #10b981; /* Emerald — "Fácil" */
+
+  /* Radii */
+  --app-radius-sm: 8px;
+  --app-radius-md: 12px;
+
+  /* Typography scale (root = 16px) */
+  --fs-h1: 2rem; /* 32px */
+  --fs-h2: 1.5rem; /* 24px */
+  --fs-body: 1.125rem; /* 18px — easier on the eyes for study */
+  --fs-small: 0.875rem; /* 14px */
+  --lh-body: 1.6;
+
+  --app-content-max-width: 1200px;
+}
+
+/* Dark mode — essential for night study. Never pure black. */
+.app-dark {
+  --app-bg: #1e293b; /* blue-gray slate */
+  --app-surface: #334155;
+  --app-surface-alt: #0f172a;
+  --app-border: #475569;
+
+  --app-heading: #f8fafc;
+  --app-text: #e2e8f0;
+  --app-muted: #94a3b8;
+
+  --app-primary: #818cf8;
+}
+
+/* ---------- Base ---------- */
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+/* ---------- Typography ---------- */
+h1 {
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  color: var(--app-heading);
+  line-height: 1.25;
+  margin: 0;
+}
+
+h2 {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  color: var(--app-heading);
+  line-height: 1.3;
+  margin: 0;
+}
+
+small,
+.text-small {
+  font-size: var(--fs-small);
+  font-weight: 500;
+  color: var(--app-muted);
+}
+
+/* ---------- Shared page layout helpers ---------- */
+.page-header {
+  margin-bottom: 1.5rem;
+
+  h1 {
+    margin: 0 0 0.35rem;
+  }
+
+  p {
+    margin: 0;
+    color: var(--app-muted);
+    font-size: 1rem;
+  }
+
+  &--row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  i {
+    font-size: 1.75rem;
+    color: var(--app-primary);
+  }
+
+  &__value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--app-heading);
+  }
+
+  &__label {
+    color: var(--app-muted);
+    font-size: var(--fs-small);
+  }
+}
+
+.actions {
+  margin-top: 1rem;
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.empty {
+  text-align: center;
+  color: var(--app-muted);
+  padding: 2rem 0;
+}
+
+/* ---------- Forms ---------- */
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+
+  label {
+    font-size: var(--fs-small);
+    font-weight: 700; /* labels always outside the input, bold */
+    color: var(--app-heading);
+  }
+
+  input,
+  textarea {
+    width: 100%;
+  }
+}
+
+.form-error {
+  margin: 0 0 0.5rem;
+  color: var(--feedback-again);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+/* Inputs & buttons: touch-friendly 48px, rounded 8px */
+.p-inputtext,
+.p-textarea,
+.p-select,
+.p-multiselect,
+.p-password input {
+  min-height: 48px;
+  border-radius: var(--app-radius-sm);
+}
+
+.p-textarea {
+  min-height: auto;
+}
+
+.p-button {
+  min-height: 48px;
+  border-radius: var(--app-radius-sm);
+  font-weight: 700;
+}
+
+/* Text-only (tertiary) buttons stay compact */
+.p-button.p-button-text,
+.p-button.p-button-icon-only {
+  min-height: auto;
+}
