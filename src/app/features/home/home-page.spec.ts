@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
+import { of } from 'rxjs';
 import { HomePage } from './home-page';
 import { SubjectsStore } from '../subjects/data/subjects.store';
 import { Subject } from '../subjects/data/subject.model';
+import { DashboardApi } from './data/dashboard.api';
 
 describe('HomePage', () => {
   it('loads subjects and shows the empty copy when there are none', async () => {
@@ -17,6 +19,18 @@ describe('HomePage', () => {
       providers: [
         provideRouter([]),
         { provide: SubjectsStore, useValue: store },
+        {
+          provide: DashboardApi,
+          useValue: {
+            stats: () =>
+              of({
+                date: '2026-08-17',
+                dueToday: 0,
+                topicCount: 0,
+                retentionRate: null,
+              }),
+          },
+        },
       ],
     })
       .overrideComponent(HomePage, {

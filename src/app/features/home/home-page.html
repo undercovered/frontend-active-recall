@@ -18,7 +18,7 @@
     <div class="stat">
       <i class="pi pi-bolt"></i>
       <div>
-        <span class="stat__value">0</span>
+        <span class="stat__value">{{ stats()?.dueToday ?? 0 }}</span>
         <span class="stat__label">Para repasar hoy</span>
       </div>
     </div>
@@ -28,8 +28,8 @@
     <div class="stat">
       <i class="pi pi-sparkles"></i>
       <div>
-        <span class="stat__value">0</span>
-        <span class="stat__label">Nuevas aprendidas</span>
+        <span class="stat__value">{{ stats()?.topicCount ?? 0 }}</span>
+        <span class="stat__label">Temas</span>
       </div>
     </div>
   </p-card>
@@ -38,7 +38,7 @@
     <div class="stat">
       <i class="pi pi-chart-line"></i>
       <div>
-        <span class="stat__value">—</span>
+        <span class="stat__value">{{ retentionLabel() }}</span>
         <span class="stat__label">Tasa de retención</span>
       </div>
     </div>

@@ -26,7 +26,10 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
           code === 'AUTH_USER_NOT_FOUND';
         const url = withAuth.url;
         const isAuthCall =
-          url.includes('/auth/login') || url.includes('/auth/register');
+          url.includes('/auth/login') ||
+          url.includes('/auth/register') ||
+          url.includes('/auth/password-reset') ||
+          (withAuth.method === 'POST' && url.includes('/users'));
         if (sessionDead && !isAuthCall) {
           auth.clear();
           void router.navigateByUrl('/login');

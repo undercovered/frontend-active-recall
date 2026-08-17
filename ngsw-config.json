@@ -8,7 +8,9 @@
       "resources": {
         "files": [
           "/favicon.ico",
+          "/logo.svg",
           "/icons/icon-192x192.png",
+          "/icons/icon-32x32.png",
           "/icons/icon-72x72.png",
           "/index.csr.html",
           "/index.html",

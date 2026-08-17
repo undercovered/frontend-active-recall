@@ -29,7 +29,7 @@ describe('AuthApi', () => {
       firstName: 'Ana',
       lastName: 'Pérez',
       email: 'ana@mail.com',
-      username: 'ana_1',
+      username: 'ana_user',
       phoneCountryCode: '+57',
       phone: '300',
       enabled: true,
@@ -49,15 +49,22 @@ describe('AuthApi', () => {
         firstName: 'Ana',
         lastName: 'Pérez',
         email: 'ana@mail.com',
-        username: 'ana_1',
-        password: 'Secreto123',
+        username: 'ana_user',
+        password: 'Secreto1!',
+        passwordConfirm: 'Secreto1!',
       }),
     );
-    http.expectOne(`${base}/register`).flush({ data: user, msg: '' });
+    http.expectOne(`${environment.apiUrl}/users`).flush({ data: user, msg: '' });
     await expect(regP).resolves.toEqual(user);
 
     const meP = firstValueFrom(api.me());
     http.expectOne(`${base}/me`).flush({ data: user, msg: '' });
     await expect(meP).resolves.toEqual(user);
+
+    const resetP = firstValueFrom(api.requestPasswordReset({ email: 'ana@mail.com' }));
+    const resetReq = http.expectOne(`${base}/password-reset`);
+    expect(resetReq.request.body).toEqual({ email: 'ana@mail.com' });
+    resetReq.flush({ data: { sent: true, email: 'ana@mail.com' }, msg: '' });
+    await expect(resetP).resolves.toEqual({ sent: true, email: 'ana@mail.com' });
   });
 });

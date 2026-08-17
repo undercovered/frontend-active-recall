@@ -2,7 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthApi } from './auth.api';
-import { AuthUser, LoginRequest, RegisterRequest } from './auth.model';
+import { AuthUser, LoginRequest, PasswordResetRequest, RegisterRequest } from './auth.model';
 
 const TOKEN_KEY = 'active-recall-token';
 
@@ -61,6 +61,10 @@ export class AuthService {
 
   async register(input: RegisterRequest): Promise<AuthUser> {
     return firstValueFrom(this.api.register(input));
+  }
+
+  async requestPasswordReset(input: PasswordResetRequest): Promise<void> {
+    await firstValueFrom(this.api.requestPasswordReset(input));
   }
 
   logout(): void {

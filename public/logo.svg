@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Active Recall">
+  <defs>
+    <linearGradient id="ar-card" x1="10" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#818CF8"/>
+      <stop offset="1" stop-color="#4F46E5"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="7" width="34" height="42" rx="7" transform="rotate(-11 33 28)" fill="url(#ar-card)" opacity="0.42"/>
+  <rect x="15" y="13" width="34" height="42" rx="7" fill="url(#ar-card)"/>
+  <path fill="#fff" d="M32 22.5 42.2 47h-5.1l-1.9-5.1H28.8L26.9 47h-5.1L32 22.5Zm-2.1 14.3h4.2L32 31.2l-2.1 5.6Z"/>
+  <path d="M46.5 48.5a16 16 0 0 1-22.2 1.2" stroke="#A5B4FC" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M46.8 43.6v5.4h-5.4" stroke="#A5B4FC" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

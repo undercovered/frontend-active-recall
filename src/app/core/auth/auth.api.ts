@@ -3,7 +3,14 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../http/api-response';
-import { AuthUser, LoginRequest, LoginResult, RegisterRequest } from './auth.model';
+import {
+  AuthUser,
+  LoginRequest,
+  LoginResult,
+  PasswordResetRequest,
+  PasswordResetResult,
+  RegisterRequest,
+} from './auth.model';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApi {
@@ -18,7 +25,13 @@ export class AuthApi {
 
   register(input: RegisterRequest): Observable<AuthUser> {
     return this.http
-      .post<ApiResponse<AuthUser>>(`${this.baseUrl}/register`, input)
+      .post<ApiResponse<AuthUser>>(`${environment.apiUrl}/users`, input)
+      .pipe(map((res) => res.data));
+  }
+
+  requestPasswordReset(input: PasswordResetRequest): Observable<PasswordResetResult> {
+    return this.http
+      .post<ApiResponse<PasswordResetResult>>(`${this.baseUrl}/password-reset`, input)
       .pipe(map((res) => res.data));
   }
 

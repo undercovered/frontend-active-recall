@@ -20,6 +20,15 @@ export interface LoginResult {
   user: AuthUser;
 }
 
+export interface PasswordResetRequest {
+  email: string;
+}
+
+export interface PasswordResetResult {
+  sent: boolean;
+  email: string;
+}
+
 export interface RegisterRequest {
   firstName: string;
   lastName: string;
@@ -28,6 +37,7 @@ export interface RegisterRequest {
   phoneCountryCode?: string | null;
   phone?: string | null;
   password: string;
+  passwordConfirm: string;
 }
 
 export interface ApiErrorBody {

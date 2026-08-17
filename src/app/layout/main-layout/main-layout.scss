@@ -38,8 +38,7 @@
       width: 32px;
       height: 32px;
       min-width: 32px;
-      border-radius: 8px;
-      object-fit: cover;
+      object-fit: contain;
     }
   }
 
@@ -173,8 +172,7 @@
     img {
       width: 28px;
       height: 28px;
-      border-radius: 6px;
-      object-fit: cover;
+      object-fit: contain;
     }
   }
 
