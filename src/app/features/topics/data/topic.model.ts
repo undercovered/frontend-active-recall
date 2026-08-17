@@ -15,6 +15,7 @@ export interface TopicFlashcard {
   id: string;
   question: string;
   topicId: string;
+  subjectId: string;
   answerTypeId: string;
   answerType?: AnswerType;
   answers: TopicAnswer[];
@@ -25,14 +26,17 @@ export interface TopicAnswer {
   id?: string;
   answerText: string;
   isCorrect: boolean;
+  topicId?: string;
+  subjectId?: string;
   deleted?: boolean;
 }
 
 export interface TopicRecall {
   id: string;
   dateRecall: string;
-  correctAnswer: boolean | null;
+  completed: boolean;
   topicId: string;
+  subjectId: string;
   deleted?: boolean;
 }
 
