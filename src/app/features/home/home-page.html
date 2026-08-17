@@ -66,18 +66,24 @@
 } @else {
   <section class="decks">
     @for (subject of subjectsStore.subjects(); track subject.id) {
-      <p-card styleClass="deck">
-        <div class="deck__body">
-          <h2 class="deck__name">{{ subject.title }}</h2>
-          @if (subject.description) {
-            <p class="deck__desc">{{ subject.description }}</p>
-          }
-          <div class="deck__pills">
-            <span class="pill pill--review">0 para repasar</span>
-            <span class="pill pill--new">0 nuevas</span>
+      <a
+        class="deck-link"
+        [routerLink]="['/subjects', subject.id, 'topics']"
+        [attr.aria-label]="'Ver temas de ' + subject.title"
+      >
+        <p-card styleClass="deck">
+          <div class="deck__body">
+            <h2 class="deck__name">{{ subject.title }}</h2>
+            @if (subject.description) {
+              <div class="deck__desc rich-text" [innerHTML]="subject.description"></div>
+            }
+            <div class="deck__pills">
+              <span class="pill pill--review">0 para repasar</span>
+              <span class="pill pill--new">0 nuevas</span>
+            </div>
           </div>
-        </div>
-      </p-card>
+        </p-card>
+      </a>
     }
   </section>
 }

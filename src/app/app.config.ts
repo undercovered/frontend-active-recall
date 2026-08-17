@@ -6,12 +6,13 @@ import { providePrimeNG } from 'primeng/config';
 import { routes } from './app.routes';
 import { AppPreset } from './core/theme/app-preset';
 import { provideServiceWorker } from '@angular/service-worker';
+import { authInterceptor } from './core/http/auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes, withComponentInputBinding()),
-    provideHttpClient(withInterceptors([])),
+    provideHttpClient(withInterceptors([authInterceptor])),
     providePrimeNG({
       theme: {
         preset: AppPreset,

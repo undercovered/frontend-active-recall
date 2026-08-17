@@ -40,6 +40,14 @@
   --app-content-max-width: 1200px;
 }
 
+/* Scale down the big headings on small screens so they don't dominate. */
+@media (max-width: 640px) {
+  :root {
+    --fs-h1: 1.6rem; /* 25.6px */
+    --fs-h2: 1.25rem; /* 20px */
+  }
+}
+
 /* Dark mode — essential for night study. Never pure black. */
 .app-dark {
   --app-bg: #1e293b; /* blue-gray slate */
@@ -61,6 +69,14 @@
 
 html {
   font-size: 16px;
+}
+
+/* Safety net: never let a stray wide element create horizontal page scroll.
+   Intentional horizontal scrolling lives in dedicated containers (.table-scroll). */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 html,
@@ -113,12 +129,15 @@ small,
 
   h1 {
     margin: 0 0 0.35rem;
+    text-align: center;
   }
 
   p {
     margin: 0;
     color: var(--app-muted);
     font-size: 1rem;
+    text-align: justify;
+    text-wrap: pretty;
   }
 
   &--row {
@@ -127,6 +146,11 @@ small,
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
+
+    h1,
+    p {
+      text-align: start;
+    }
   }
 }
 
@@ -200,6 +224,73 @@ small,
   color: var(--feedback-again);
   font-size: var(--fs-small);
   font-weight: 600;
+}
+
+/* ---------- Rich text (rendered HTML from the editor) ---------- */
+.rich-text {
+  color: var(--app-text);
+  line-height: var(--lh-body);
+
+  p {
+    margin: 0 0 0.5rem;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  a {
+    color: var(--app-primary);
+    text-decoration: underline;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+
+  em {
+    font-style: italic;
+  }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+
+  i {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--app-muted);
+    pointer-events: none;
+  }
+
+  input {
+    padding-left: 2.25rem;
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 560px) {
+  .search-box {
+    display: flex;
+    width: 100%;
+
+    input {
+      min-width: 0;
+      width: 100%;
+    }
+  }
 }
 
 /* Inputs & buttons: touch-friendly 48px, rounded 8px */

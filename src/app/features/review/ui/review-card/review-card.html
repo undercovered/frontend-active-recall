@@ -1,0 +1,121 @@
+@if (card(); as c) {
+  <div
+    class="flip"
+    [class.flip--flipped]="flipped()"
+    [class.flip--right]="c.state === 'graded' && c.isCorrect === true"
+    [class.flip--wrong]="c.state === 'graded' && c.isCorrect === false"
+    [class.flip--blocked]="blocking()"
+  >
+    <div class="flip__inner">
+      <section class="face face--front">
+        <p class="face__question">{{ c.question }}</p>
+
+        @if (c.answerTypeCode === 'open_answer') {
+          <textarea
+            pTextarea
+            [(ngModel)]="openText"
+            rows="4"
+            [disabled]="locked() || c.state === 'awaiting_grade'"
+            placeholder="Escribe tu respuesta..."
+          ></textarea>
+          @if (c.state === 'pending') {
+            <p-button
+              label="Responder"
+              icon="pi pi-send"
+              [loading]="submitting()"
+              [disabled]="!openText.trim()"
+              (onClick)="submitOpen()"
+            />
+          }
+        } @else if (c.answerTypeCode === 'single_choice') {
+          <div class="choices">
+            @for (option of c.options; track option.id) {
+              <label class="choice">
+                <p-radioButton
+                  name="opt-{{ c.id }}"
+                  [value]="option.id"
+                  [(ngModel)]="selectedId"
+                  [disabled]="locked()"
+                  [inputId]="'opt-' + option.id"
+                />
+                <span>{{ option.answerText }}</span>
+              </label>
+            }
+          </div>
+          @if (c.state === 'pending') {
+            <p-button
+              label="Responder"
+              icon="pi pi-send"
+              [loading]="submitting()"
+              [disabled]="!selectedId"
+              (onClick)="submitChoice()"
+            />
+          }
+        } @else {
+          <div class="choices">
+            @for (option of c.options; track option.id) {
+              <label class="choice">
+                <p-checkbox
+                  [(ngModel)]="selectedIds[option.id]"
+                  [binary]="true"
+                  [disabled]="locked()"
+                  [inputId]="'chk-' + option.id"
+                />
+                <span>{{ option.answerText }}</span>
+              </label>
+            }
+          </div>
+          @if (c.state === 'pending') {
+            <p-button
+              label="Responder"
+              icon="pi pi-send"
+              [loading]="submitting()"
+              (onClick)="submitChoice()"
+            />
+          }
+        }
+
+        @if (error()) {
+          <p class="form-error">{{ error() }}</p>
+        }
+      </section>
+
+      <section class="face face--back">
+        @if (c.answerTypeCode === 'open_answer') {
+          <p class="face__label">Tu respuesta</p>
+          <p class="face__body">{{ c.openResponse || openText }}</p>
+          <p class="face__label">Respuesta esperada</p>
+          <p class="face__body">{{ c.expectedText }}</p>
+
+          @if (c.state === 'awaiting_grade') {
+            <div class="grade-actions">
+              <p-button
+                label="Incorrecta"
+                severity="danger"
+                [outlined]="true"
+                [loading]="submitting()"
+                (onClick)="grade(false)"
+              />
+              <p-button
+                label="Correcta"
+                severity="success"
+                [loading]="submitting()"
+                (onClick)="grade(true)"
+              />
+            </div>
+          } @else if (c.isCorrect === true) {
+            <p class="result result--ok"><i class="pi pi-check-circle"></i> Correcta</p>
+          } @else {
+            <p class="result result--bad"><i class="pi pi-times-circle"></i> Incorrecta</p>
+          }
+        } @else if (c.isCorrect === true) {
+          <p class="result result--ok"><i class="pi pi-check-circle"></i> ¡Correcto!</p>
+          <p class="face__hint">Queda bloqueada hasta el próximo repaso.</p>
+        } @else {
+          <p class="result result--bad"><i class="pi pi-lock"></i> Incorrecta</p>
+          <p class="face__hint">No puedes cambiar esta respuesta hasta el próximo repaso.</p>
+        }
+      </section>
+    </div>
+  </div>
+}

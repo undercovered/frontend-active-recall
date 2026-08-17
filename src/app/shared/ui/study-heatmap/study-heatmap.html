@@ -1,13 +1,35 @@
-<div class="heatmap">
-  @for (week of columns(); track $index) {
-    <div class="heatmap__col">
-      @for (cell of week; track cell.date) {
-        <span
-          class="heatmap__cell"
-          [attr.data-level]="cell.level"
-          [title]="cell.date + ' · ' + cell.count + ' repasos'"
-        ></span>
+<div class="heatmap" [style.--cols]="weeks()">
+  <div class="heatmap__x">
+    @if (showWeekdays()) {
+      <div class="heatmap__x-spacer"></div>
+    }
+    <div class="heatmap__months">
+      @for (label of monthLabels(); track $index) {
+        <span class="heatmap__month">{{ label }}</span>
       }
     </div>
-  }
+  </div>
+
+  <div class="heatmap__main">
+    @if (showWeekdays()) {
+      <div class="heatmap__weekdays">
+        @for (label of weekdayLabels; track $index) {
+          <span>{{ label }}</span>
+        }
+      </div>
+    }
+
+    <div class="heatmap__grid">
+      @for (week of columns(); track $index) {
+        @for (cell of week; track cell.date) {
+          <span
+            class="heatmap__cell"
+            [attr.data-level]="cell.level"
+            [class.heatmap__cell--future]="cell.future"
+            [title]="cell.date + ' · ' + cell.count + ' repasos'"
+          ></span>
+        }
+      }
+    </div>
+  </div>
 </div>

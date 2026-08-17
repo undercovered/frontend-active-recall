@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -11,6 +11,10 @@ import { StudyHeatmap } from '../../shared/ui/study-heatmap/study-heatmap';
   templateUrl: './home-page.html',
   styleUrl: './home-page.scss',
 })
-export class HomePage {
+export class HomePage implements OnInit {
   protected readonly subjectsStore = inject(SubjectsStore);
+
+  ngOnInit(): void {
+    this.subjectsStore.ensureLoaded();
+  }
 }

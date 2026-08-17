@@ -1,8 +1,47 @@
-<div class="layout" [class.layout--collapsed]="collapsed()">
+<div
+  class="layout"
+  [class.layout--collapsed]="collapsed() && !isMobile()"
+  [class.layout--mobile]="isMobile()"
+  [class.layout--menu-open]="menuOpen()"
+>
+  @if (isMobile()) {
+    <header class="topbar">
+      <button
+        class="topbar__btn"
+        type="button"
+        (click)="openMenu()"
+        aria-label="Abrir menú"
+      >
+        <i class="pi pi-bars"></i>
+      </button>
+      <span class="topbar__brand">
+        <img src="/icons/icon-192x192.png" alt="" width="28" height="28" />
+        Active Recall
+      </span>
+      <button
+        class="topbar__btn"
+        type="button"
+        (click)="theme.toggle()"
+        [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'"
+      >
+        <i class="pi" [class.pi-sun]="theme.isDark()" [class.pi-moon]="!theme.isDark()"></i>
+      </button>
+    </header>
+  }
+
+  @if (menuOpen()) {
+    <button
+      class="backdrop"
+      type="button"
+      aria-label="Cerrar menú"
+      (click)="closeMenu()"
+    ></button>
+  }
+
   <aside class="sidebar">
     <div class="sidebar__brand">
-      <i class="pi pi-sparkles"></i>
-      @if (!collapsed()) {
+      <img class="sidebar__logo" src="/icons/icon-192x192.png" alt="Active Recall" width="32" height="32" />
+      @if (!collapsed() || isMobile() || menuOpen()) {
         <span class="sidebar__brand-text">Active Recall</span>
       }
     </div>
@@ -17,7 +56,7 @@
           [title]="item.label"
         >
           <i [class]="item.icon"></i>
-          @if (!collapsed()) {
+          @if (!collapsed() || isMobile() || menuOpen()) {
             <span>{{ item.label }}</span>
           }
         </a>
@@ -25,27 +64,46 @@
     </nav>
 
     <div class="sidebar__footer">
-      <button
-        class="sidebar__action"
-        type="button"
-        (click)="theme.toggle()"
-        [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'"
-      >
-        <i class="pi" [class.pi-sun]="theme.isDark()" [class.pi-moon]="!theme.isDark()"></i>
-        @if (!collapsed()) {
-          <span>{{ theme.isDark() ? 'Modo claro' : 'Modo oscuro' }}</span>
-        }
-      </button>
+      @if (!isMobile()) {
+        <button
+          class="sidebar__action"
+          type="button"
+          (click)="theme.toggle()"
+          [title]="theme.isDark() ? 'Modo claro' : 'Modo oscuro'"
+        >
+          <i class="pi" [class.pi-sun]="theme.isDark()" [class.pi-moon]="!theme.isDark()"></i>
+          @if (!collapsed() || menuOpen()) {
+            <span>{{ theme.isDark() ? 'Modo claro' : 'Modo oscuro' }}</span>
+          }
+        </button>
+
+        <button
+          class="sidebar__action"
+          type="button"
+          (click)="toggleCollapse()"
+          [title]="collapsed() ? 'Expandir menú' : 'Contraer menú'"
+        >
+          <i class="pi" [class.pi-angle-left]="!collapsed()" [class.pi-angle-right]="collapsed()"></i>
+          @if (!collapsed() || menuOpen()) {
+            <span>{{ collapsed() ? 'Expandir' : 'Contraer' }}</span>
+          }
+        </button>
+      } @else {
+        <button class="sidebar__action" type="button" (click)="closeMenu()">
+          <i class="pi pi-times"></i>
+          <span>Cerrar</span>
+        </button>
+      }
 
       <button
         class="sidebar__action"
         type="button"
-        (click)="toggle()"
-        title="Contraer menú"
+        (click)="logout()"
+        title="Cerrar sesión"
       >
-        <i class="pi" [class.pi-angle-left]="!collapsed()" [class.pi-angle-right]="collapsed()"></i>
-        @if (!collapsed()) {
-          <span>Contraer</span>
+        <i class="pi pi-sign-out"></i>
+        @if (!collapsed() || isMobile() || menuOpen()) {
+          <span>Cerrar sesión</span>
         }
       </button>
     </div>

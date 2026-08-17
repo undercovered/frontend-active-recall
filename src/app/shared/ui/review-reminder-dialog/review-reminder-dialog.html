@@ -1,0 +1,47 @@
+@if (reminder.visible()) {
+  <div class="reminder" role="presentation">
+    <div
+      class="reminder__card"
+      role="alertdialog"
+      aria-labelledby="reminder-title"
+      aria-describedby="reminder-copy"
+    >
+      <div class="reminder__icon" aria-hidden="true">
+        <i class="pi pi-bolt"></i>
+      </div>
+
+      <h2 id="reminder-title">Tienes repasos pendientes para hoy</h2>
+      <p id="reminder-copy">
+        @if (reminder.due(); as due) {
+          @if (due.count === 1) {
+            Hay 1 tarjeta esperándote para no perder el ritmo.
+          } @else {
+            Hay {{ due.count }} tarjetas
+            @if (due.topicCount > 1) {
+              en {{ due.topicCount }} temas
+            }
+            esperándote para no perder el ritmo.
+          }
+        } @else {
+          Es un buen momento para reforzar lo que estudiaste.
+        }
+      </p>
+
+      <div class="reminder__actions">
+        <p-button
+          label="Recordarme más tarde"
+          severity="secondary"
+          [outlined]="true"
+          pTooltip="Te lo recordaré cada 10 minutos mientras la plataforma siga abierta y haya pendientes de hoy."
+          tooltipPosition="top"
+          (onClick)="reminder.remindLater()"
+        />
+        <p-button
+          label="Ir a repasar"
+          icon="pi pi-play"
+          (onClick)="reminder.goToReview()"
+        />
+      </div>
+    </div>
+  </div>
+}

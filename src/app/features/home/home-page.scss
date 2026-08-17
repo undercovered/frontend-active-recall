@@ -6,14 +6,34 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+:host ::ng-deep .dash-card {
+  overflow: hidden;
+  min-width: 0;
+
+  .p-card-body,
+  .p-card-content {
+    overflow: hidden;
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  /* auto-fit makes the few cards stretch to fill the full row width;
+     min(100%, 200px) lets them shrink below 200px on tiny screens */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
   gap: 1rem;
   margin: 1.5rem 0;
+}
+
+:host ::ng-deep .metrics .p-card {
+  height: 100%;
 }
 
 :host ::ng-deep .metric--accent {
@@ -30,8 +50,23 @@
 
 .decks {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  /* auto-fill keeps cards compact (they don't stretch to fill the row);
+     min(100%, 260px) prevents overflow on very narrow phones */
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
   gap: 1rem;
+}
+
+.deck-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 12px;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
 }
 
 .deck {
@@ -46,6 +81,12 @@
   margin: 0 0 1rem;
   color: var(--app-muted);
   font-size: 1rem;
+  /* clamp long HTML descriptions to keep cards uniform */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .deck__pills {

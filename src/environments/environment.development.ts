@@ -1,4 +1,8 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:3000/api',
+  /**
+   * URL base del backend (incluye el prefijo /api).
+   * Ajusta el puerto para que coincida con el PORT del backend (.env).
+   */
+  apiUrl: 'http://localhost:8080/api',
 };

@@ -1,29 +1,34 @@
 <header class="page-header">
   <h1>Repasar</h1>
-  <p>Aquí realizarás la sesión de repaso con las preguntas que tocan hoy.</p>
+  <p>Las materias y temas que tocan hoy, según tu calendario de active recall.</p>
 </header>
 
-<p-card styleClass="review-preview">
-  <h2>Vista previa del motor de repaso</h2>
-  <p class="review-preview__q">
-    Cuando exista una sesión, verás aquí la pregunta y, tras responder, valorarás
-    tu recuerdo con estos botones:
-  </p>
-
-  <div class="feedback">
-    <button class="feedback__btn feedback__btn--again" type="button" disabled>
-      Otra vez
-    </button>
-    <button class="feedback__btn feedback__btn--hard" type="button" disabled>
-      Difícil
-    </button>
-    <button class="feedback__btn feedback__btn--good" type="button" disabled>
-      Bien
-    </button>
-    <button class="feedback__btn feedback__btn--easy" type="button" disabled>
-      Fácil
-    </button>
-  </div>
-
-  <small>Próximamente: motor de repaso con repetición espaciada.</small>
-</p-card>
+@if (loading()) {
+  <div class="empty"><i class="pi pi-spin pi-spinner"></i> Cargando tu repaso de hoy...</div>
+} @else if (error()) {
+  <div class="empty">{{ error() }}</div>
+} @else if (session(); as s) {
+  @if (!s.hasPending || s.subjects.length === 0) {
+    <div class="empty empty--calm">
+      <i class="pi pi-check-circle"></i>
+      <p>No tienes repasos para hoy.</p>
+      <small>Vuelve cuando toque el siguiente intervalo. Mientras tanto, descansa la curva del olvido.</small>
+    </div>
+  } @else {
+    @for (subject of s.subjects; track subject.id) {
+      <section class="subject-block">
+        <h2>{{ subject.title }}</h2>
+        @for (topic of subject.topics; track topic.id) {
+          <article class="topic-block">
+            <h3>{{ topic.title }}</h3>
+            <div class="cards">
+              @for (card of topic.flashcards; track card.id) {
+                <app-review-card [recallId]="topic.recallId" [flashcard]="card" />
+              }
+            </div>
+          </article>
+        }
+      </section>
+    }
+  }
+}

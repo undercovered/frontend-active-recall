@@ -2,6 +2,7 @@ export interface Flashcard {
   id: string;
   question: string;
   topicId: string;
+  deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
