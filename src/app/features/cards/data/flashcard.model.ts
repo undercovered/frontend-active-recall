@@ -1,14 +1,34 @@
+import {
+  AnswerType,
+  AnswerTypeCode,
+  TopicAnswer,
+} from '../../topics/data/topic.model';
+
 export interface Flashcard {
   id: string;
   question: string;
   topicId: string;
+  subjectId: string;
+  topicTitle?: string;
+  subjectTitle?: string;
+  answerTypeId: string;
+  answerType?: AnswerType | null;
+  answers: TopicAnswer[];
   deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export type CreateFlashcard = Pick<Flashcard, 'question' | 'topicId'>;
-export type UpdateFlashcard = Partial<Pick<Flashcard, 'question'>>;
+export interface CreateFlashcard {
+  topicId: string;
+  question: string;
+  answerTypeCode: AnswerTypeCode;
+  answers: { answerText: string; isCorrect: boolean }[];
+}
+
+export type UpdateFlashcard = Partial<
+  Pick<CreateFlashcard, 'question' | 'answerTypeCode' | 'answers'>
+>;
 
 /**
  * Fixed interval schedule (in days) for the simple spaced-repetition strategy.

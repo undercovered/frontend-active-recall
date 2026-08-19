@@ -1,18 +1,16 @@
 # Arquitectura — Front-end (Active Recall)
 
-Documento técnico del **cliente web**. Describe cómo está construido y por qué.
-El backend (API Node.js) vive en un repositorio aparte y expone la API que consume
-esta app.
+Documento técnico del **cliente web**. El backend (Node + Express) es otro
+repositorio.
 
 - [1. Visión general](#1-visión-general)
-- [2. Arquitectura feature-based](#2-arquitectura-feature-based)
+- [2. Feature-based](#2-feature-based)
 - [3. Estado con signals](#3-estado-con-signals)
-- [4. Enrutamiento y lazy loading](#4-enrutamiento-y-lazy-loading)
-- [5. Sistema de diseño](#5-sistema-de-diseño)
-- [6. PWA](#6-pwa)
-- [7. Modelos de dominio](#7-modelos-de-dominio)
-- [8. Decisiones y trade-offs](#8-decisiones-y-trade-offs)
-- [9. Roadmap técnico](#9-roadmap-técnico)
+- [4. Auth y HTTP](#4-auth-y-http)
+- [5. Rutas](#5-rutas)
+- [6. Sistema de diseño](#6-sistema-de-diseño)
+- [7. PWA](#7-pwa)
+- [8. Decisiones](#8-decisiones)
 
 ---
 
@@ -20,134 +18,107 @@ esta app.
 
 ```mermaid
 flowchart LR
-    FE["Front-end<br/>Angular 21 (PWA)"] -- "HTTP REST /api" --> BE["Backend (repo aparte)<br/>Node.js + Express"]
+    FE["Angular 21 PWA (Vercel)"] -- "HTTPS + Bearer JWT" --> BE["API /api (AWS)"]
 ```
 
-SPA/PWA en Angular 21, con reactividad basada en **signals** y funcionamiento
-**zoneless** (sin `zone.js`). La comunicación con el servidor se abstrae en la capa
-`data/` de cada feature, de modo que cambiar de origen de datos (hoy in-memory,
-mañana la API) no afecta a los componentes.
+SPA zoneless. Cada feature habla con el servidor solo desde `data/*api.ts`.
+Los stores exponen signals; las páginas no conocen URLs ni el sobre `{ data, msg }`.
 
 ---
 
-## 2. Arquitectura feature-based
-
-La estructura se organiza por **dominio de negocio** (screaming architecture), no por
-tipo de archivo. Cada feature es autocontenida.
+## 2. Feature-based
 
 ```
 src/app/
-├── core/                 # Singletons transversales (se cargan una vez)
-│   ├── services/         #   ej. pwa-update.service.ts
-│   └── theme/            #   theme.service.ts, app-preset.ts
-├── shared/               # Reutilizable, sin estado propio
-│   └── ui/               #   componentes de presentación (ej. study-heatmap)
-├── features/             # ← El corazón
-│   ├── home/             #   Dashboard
+├── core/          # auth, interceptor, tema, PWA
+├── shared/ui/     # heatmap
+├── features/      # un dominio = una carpeta
+│   ├── auth/
+│   ├── home/          # dashboard + cards de materia
 │   ├── subjects/
-│   │   ├── data/         #     modelos + store (signals)
-│   │   └── pages/        #     componentes de ruta ("inteligentes")
-│   ├── topics/
+│   ├── topics/        # listado, por materia, ficha GET :id
 │   ├── cards/
 │   └── review/
-└── layout/               # Shell (sidebar, navegación)
+└── layout/
 ```
 
-Ventajas: alta cohesión, límites claros y escalabilidad (añadir features no complica
-las existentes).
+`data/` = modelo + cliente HTTP + store. `pages/` = rutas.
 
 ---
 
 ## 3. Estado con signals
 
-Se usa **Angular Signals** con servicios *store* por feature, en lugar de NgRx.
+No hay NgRx. Cada store (`providedIn: 'root'`) tiene `signal()` de listas,
+`loading` / `saving` y métodos que devuelven `Observable` para que la página
+muestre errores del `msg` del API.
 
-- Para el tamaño de la app, NgRx sería sobre-ingeniería.
-- `signal()` + `computed()` ofrecen reactividad fina con código simple.
-- La app es **zoneless**: mejor rendimiento y menos "magia".
-
-Ejemplo (`subjects/data/subjects.store.ts`): expone `subjects` (readonly signal) y
-`count` (computed). Hoy es *in-memory*; al conectar la API se cambia el interior por
-llamadas HTTP **sin tocar los componentes** (misma superficie pública).
-
-```mermaid
-flowchart LR
-    Comp["Componente (page)"] -- lee --> Store["Store (signals)"]
-    Comp -- acciones --> Store
-    Store -. "hoy: memoria / mañana: HttpClient" .-> API[("API /api")]
-```
+Al conectar la API no hubo que reescribir las páginas: ya leían `store.subjects()`,
+etc.
 
 ---
 
-## 4. Enrutamiento y lazy loading
+## 4. Auth y HTTP
 
-`app.routes.ts` define un shell (`layout/main-layout`) con rutas hijas cargadas con
-`loadComponent` (lazy). Cada feature genera su propio *chunk*, reduciendo el bundle
-inicial.
-
----
-
-## 5. Sistema de diseño
-
-Centrado en la legibilidad para sesiones de estudio largas.
-
-- **Tokens CSS** en `styles.scss` (`:root` y `.app-dark`): fondos, superficies,
-  jerarquía de texto, radios y **colores de feedback de repaso**
-  (`--feedback-again/hard/good/easy`).
-- **Preset PrimeNG** (`core/theme/app-preset.ts`): primario **índigo `#4F46E5`**,
-  superficies grises frías (claro) y *slate* azulado (oscuro, nunca negro puro).
-- **Tipografía Inter**, base 16px, cuerpo 18px con interlineado 1.6.
-- **Modo claro/oscuro** (`ThemeService`) con persistencia en `localStorage` y respeto
-  a la preferencia del sistema; togglea la clase `.app-dark` en `<html>`.
+- `AuthService` guarda el JWT (y lo reenvía el `authInterceptor`).
+- `authGuard` / `guestGuard` cubren el shell y `/login`.
+- Un 401 (o usuario deshabilitado) limpia la sesión y manda a login.
+- `environment.apiUrl` es la base **con** `/api`. En local apunta a
+  `localhost:8080`; en producción debe ser el host de AWS, no `'/api'`.
 
 ---
 
-## 6. PWA
+## 5. Rutas
 
-Instalable y con caché offline vía `@angular/service-worker`:
+Lazy `loadComponent` bajo `MainLayout` (salvo login):
 
-- `ngsw-config.json`: cachea la app (JS/CSS), assets y un `dataGroups` para `/api/**`
-  (estrategia *freshness*).
-- `manifest.webmanifest`: identidad e íconos.
-- `PwaUpdateService`: avisa cuando hay una versión nueva.
-- El service worker se activa **solo en producción** (no en `ng serve`).
+| Ruta                    | Página |
+| ----------------------- | ------ |
+| `/login`                | Auth |
+| `/`                     | Inicio (stats + materias) |
+| `/subjects`             | Materias |
+| `/subjects/:id/topics`  | Temas de una materia |
+| `/topics`               | Todos los temas |
+| `/topics/:id`           | Ficha: título, descripción, preguntas |
+| `/cards`                | Todas las preguntas |
+| `/review`               | Sesión de repaso |
 
----
-
-## 7. Modelos de dominio
-
-Alineados con las entidades del backend, lo que hace el mapeo directo:
-
-| Modelo      | Campos                                                     |
-| ----------- | --------------------------------------------------------- |
-| `Subject`   | `id`, `title`, `description`, `createdAt`, `updatedAt`     |
-| `Topic`     | `id`, `title`, `description`, `subjectId`, `createdAt`, `updatedAt` |
-| `Flashcard` | `id`, `question`, `topicId`, `createdAt`, `updatedAt`     |
-
-El backend expone `camelCase`, y el front consume esa misma forma sin traducción
-adicional.
+El título de materia o de tema es un enlace (mismo patrón que “clic en la
+fila”). En Preguntas, los dropdowns de materia/tema **solo** salen al crear
+desde esa vista global.
 
 ---
 
-## 8. Decisiones y trade-offs
+## 6. Sistema de diseño
 
-| Decisión                    | Por qué                                        | Trade-off aceptado                           |
-| --------------------------- | ---------------------------------------------- | -------------------------------------------- |
-| Arquitectura feature-based  | Cohesión y escalabilidad por dominio           | Más carpetas desde el inicio                 |
-| Signals en vez de NgRx      | Simplicidad para el tamaño actual              | Menos devtools que NgRx                       |
-| Angular zoneless            | Rendimiento y menos "magia"                    | Ecosistema aún adoptándolo                   |
-| Store in-memory (temporal)  | Avanzar en UI sin backend                      | Se reinicia al recargar (hasta conectar API) |
-| Capa `data/` por feature    | Aislar el origen de datos de la UI             | Una indirección extra                        |
-| PrimeNG                     | Componentes ricos listos para usar             | Peso del bundle mayor                        |
+- Tokens en `styles.scss` (`:root` / `.app-dark`).
+- Preset PrimeNG índigo `#4F46E5`; oscuro en slate, nunca negro puro.
+- Inter 18 px / 1.6 en cuerpo.
+- `ThemeService` + `localStorage` + clase `.app-dark` en `<html>`.
+- Pills del dashboard: naranja = due hoy; azul = preguntas **en proceso**
+  (tema con menos de 7 recalls `completed`).
 
 ---
 
-## 9. Roadmap técnico
+## 7. PWA
 
-1. **Conectar a la API**: cambiar los stores de in-memory a `HttpClient` (ya provisto
-   en `app.config.ts`).
-2. **Features Temas y Flashcards**: CRUD completo.
-3. **Módulo de repaso**: motor de repetición espaciada con los botones de feedback ya
-   diseñados (Otra vez / Difícil / Bien / Fácil).
-4. **Dashboard con datos reales**: métricas y heatmap alimentados por la API.
-5. **Testing**: pruebas de stores y componentes con Vitest.
+Service worker solo en `ng build` de producción. `ngsw-config.json` cachea
+estáticos y trata `/api/**` con estrategia freshness. `PwaUpdateService` pide
+recargar si hay versión nueva.
+
+En Vercel el SW funciona porque se sirve el output `browser/` por HTTPS.
+
+---
+
+## 8. Decisiones
+
+| Decisión                 | Por qué                            | Trade-off |
+| ------------------------ | ---------------------------------- | --------- |
+| Features por dominio     | Límites claros                     | Más carpetas |
+| Signals, no NgRx         | Tamaño de la app                   | Menos devtools |
+| Zoneless                 | Menos magia, mejor perfilado       | Hay que marcar CD a mano a veces |
+| JWT en el cliente        | API stateless                      | Hay que cuidar XSS; no hay cookies HttpOnly aún |
+| `apiUrl` de compile-time | Simple, sin runtime config         | Hay que rebuild al cambiar de host AWS |
+
+El mapa de olvido y el conteo “en proceso” se calculan **en el backend**
+(`GetDashboardStats`). El front solo pinta `dueToday`, `topicCount`,
+`retentionRate` y `subjects[].inProgress`.

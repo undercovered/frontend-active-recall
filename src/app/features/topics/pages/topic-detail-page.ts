@@ -1,5 +1,8 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, RouterLink } from '@angular/router';
+import { catchError, finalize, of, switchMap } from 'rxjs';
+import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { InputTextModule } from 'primeng/inputtext';
@@ -7,13 +10,15 @@ import { Textarea } from 'primeng/textarea';
 import { TableModule } from 'primeng/table';
 import { RadioButton } from 'primeng/radiobutton';
 import { Checkbox } from 'primeng/checkbox';
-import { Select } from 'primeng/select';
-import { SubjectsStore } from '../../subjects/data/subjects.store';
-import { TopicsStore } from '../../topics/data/topics.store';
-import { AnswerTypesApi } from '../../topics/data/answer-types.api';
-import { AnswerType, AnswerTypeCode } from '../../topics/data/topic.model';
-import { FlashcardsStore } from '../data/flashcards.store';
-import { Flashcard } from '../data/flashcard.model';
+import { TopicsStore } from '../data/topics.store';
+import { AnswerTypesApi } from '../data/answer-types.api';
+import {
+  AnswerType,
+  AnswerTypeCode,
+  Topic,
+  TopicFlashcard,
+} from '../data/topic.model';
+import { FlashcardsStore } from '../../cards/data/flashcards.store';
 import { ReviewsApi } from '../../review/data/reviews.api';
 import { localIsoDate } from '../../../core/date/local-iso-date';
 import { TOPIC_REVIEW_LOCK_MSG } from '../../review/data/review-lock';
@@ -24,45 +29,52 @@ interface AnswerDraft {
 }
 
 @Component({
-  selector: 'app-cards-page',
+  selector: 'app-topic-detail-page',
   imports: [
     FormsModule,
-    TableModule,
+    RouterLink,
+    CardModule,
     ButtonModule,
     DialogModule,
     InputTextModule,
     Textarea,
+    TableModule,
     RadioButton,
     Checkbox,
-    Select,
   ],
-  templateUrl: './cards-page.html',
-  styleUrl: './cards-page.scss',
+  templateUrl: './topic-detail-page.html',
+  styleUrl: './topic-detail-page.scss',
 })
-export class CardsPage implements OnInit {
+export class TopicDetailPage implements OnInit {
+  private readonly route = inject(ActivatedRoute);
   private readonly answerTypesApi = inject(AnswerTypesApi);
-  protected readonly subjects = inject(SubjectsStore);
-  protected readonly topicsStore = inject(TopicsStore);
+  private readonly topicsStore = inject(TopicsStore);
   protected readonly cardsStore = inject(FlashcardsStore);
   private readonly reviewsApi = inject(ReviewsApi);
 
   protected readonly lockMsg = TOPIC_REVIEW_LOCK_MSG;
-  protected readonly lockedTopicIds = signal<ReadonlySet<string>>(new Set());
+  protected readonly reviewLocked = signal(false);
+
+  protected readonly topic = signal<Topic | null>(null);
+  protected readonly loading = signal(false);
+  protected readonly error = signal<string | null>(null);
 
   protected readonly dialogVisible = signal(false);
   protected readonly editingId = signal<string | null>(null);
   protected readonly saveError = signal<string | null>(null);
   protected readonly questionError = signal<string | null>(null);
-  protected readonly search = signal('');
 
   protected readonly answerTypes = signal<AnswerType[]>([
     { id: 'single_choice', code: 'single_choice', name: 'Selección única' },
     { id: 'multiple_choice', code: 'multiple_choice', name: 'Selección múltiple' },
     { id: 'open_answer', code: 'open_answer', name: 'Respuesta abierta' },
   ]);
+  private readonly fallbackTypes: AnswerType[] = [
+    { id: 'single_choice', code: 'single_choice', name: 'Selección única' },
+    { id: 'multiple_choice', code: 'multiple_choice', name: 'Selección múltiple' },
+    { id: 'open_answer', code: 'open_answer', name: 'Respuesta abierta' },
+  ];
 
-  protected readonly subjectId = signal<string | null>(null);
-  protected readonly topicId = signal<string | null>(null);
   protected questionModel = '';
   protected answerTypeCode: AnswerTypeCode = 'single_choice';
   protected openAnswer = '';
@@ -72,74 +84,75 @@ export class CardsPage implements OnInit {
   ];
   protected singleCorrectIndex = 0;
 
-  protected readonly topicsForSubject = computed(() => {
-    const subjectId = this.subjectId();
-    if (!subjectId) {
-      return [];
-    }
-    return this.topicsStore.topics().filter((t) => t.subjectId === subjectId);
-  });
-
-  private searchDebounce?: ReturnType<typeof setTimeout>;
-
   ngOnInit(): void {
-    this.subjects.load();
-    this.topicsStore.load();
-    this.cardsStore.load();
-    this.reviewsApi.dueToday(localIsoDate()).subscribe({
-      next: (due) => this.lockedTopicIds.set(new Set(due.topicIds ?? [])),
-    });
     this.answerTypesApi.getAll().subscribe({
       next: (types) => {
-        if (types.length) {
-          this.answerTypes.set(types);
-        }
+        this.answerTypes.set(types.length ? types : this.fallbackTypes);
       },
+      error: () => this.answerTypes.set(this.fallbackTypes),
     });
+
+    this.route.paramMap
+      .pipe(
+        switchMap((params) => {
+          const id = params.get('id') ?? '';
+          this.loading.set(true);
+          this.error.set(null);
+          this.topic.set(null);
+          return this.topicsStore.fetchById(id).pipe(
+            catchError((err) => {
+              this.error.set(
+                err?.status === 404
+                  ? 'El tema no existe o fue eliminado.'
+                  : (err?.error?.msg ?? 'No se pudo cargar el tema.'),
+              );
+              return of(null);
+            }),
+            finalize(() => this.loading.set(false)),
+          );
+        }),
+      )
+      .subscribe((topic) => {
+        if (topic) {
+          this.topic.set(topic);
+          this.reviewsApi.dueToday(localIsoDate()).subscribe({
+            next: (due) =>
+              this.reviewLocked.set((due.topicIds ?? []).includes(topic.id)),
+          });
+        }
+      });
   }
 
-  protected isLocked(topicId: string | null | undefined): boolean {
-    return !!topicId && this.lockedTopicIds().has(topicId);
+  protected questions(): TopicFlashcard[] {
+    return this.topic()?.flashcards ?? [];
   }
 
-  protected onSearch(value: string): void {
-    this.search.set(value);
-    clearTimeout(this.searchDebounce);
-    this.searchDebounce = setTimeout(
-      () => this.cardsStore.load({ search: value }),
-      300,
+  protected typeLabel(card: TopicFlashcard): string {
+    return (
+      card.answerType?.name ??
+      this.answerTypes().find((t) => t.id === card.answerTypeId)?.name ??
+      '—'
     );
-  }
-
-  protected onSubjectChange(subjectId: string | null): void {
-    this.subjectId.set(subjectId);
-    const stillValid = this.topicsForSubject().some(
-      (t) => t.id === this.topicId(),
-    );
-    if (!stillValid) {
-      this.topicId.set(null);
-    }
   }
 
   protected openCreate(): void {
+    if (this.reviewLocked()) {
+      return;
+    }
     this.editingId.set(null);
     this.saveError.set(null);
     this.questionError.set(null);
-    this.subjectId.set(null);
-    this.topicId.set(null);
     this.resetQuestionForm();
     this.dialogVisible.set(true);
   }
 
-  protected openEdit(card: Flashcard): void {
-    if (this.isLocked(card.topicId)) {
+  protected openEdit(card: TopicFlashcard): void {
+    if (this.reviewLocked()) {
       return;
     }
     this.editingId.set(card.id);
     this.saveError.set(null);
     this.questionError.set(null);
-    this.subjectId.set(card.subjectId);
-    this.topicId.set(card.topicId);
     this.questionModel = card.question;
     this.answerTypeCode = card.answerType?.code ?? 'single_choice';
     if (this.answerTypeCode === 'open_answer') {
@@ -184,6 +197,14 @@ export class CardsPage implements OnInit {
   }
 
   protected save(): void {
+    const topic = this.topic();
+    if (!topic) {
+      return;
+    }
+    if (this.reviewLocked()) {
+      this.saveError.set(this.lockMsg);
+      return;
+    }
     const question = this.questionModel.trim();
     if (!question) {
       this.saveError.set('La pregunta es obligatoria.');
@@ -198,12 +219,12 @@ export class CardsPage implements OnInit {
     const id = this.editingId();
     this.saveError.set(null);
 
+    const afterSave = () => {
+      this.dialogVisible.set(false);
+      this.reload(topic.id);
+    };
+
     if (id) {
-      const editing = this.cardsStore.cards().find((c) => c.id === id);
-      if (this.isLocked(editing?.topicId ?? this.topicId())) {
-        this.saveError.set(this.lockMsg);
-        return;
-      }
       this.cardsStore
         .update(id, {
           question,
@@ -211,7 +232,7 @@ export class CardsPage implements OnInit {
           answers,
         })
         .subscribe({
-          next: () => this.dialogVisible.set(false),
+          next: afterSave,
           error: (err) =>
             this.saveError.set(
               err?.error?.msg ?? 'No se pudo actualizar la pregunta.',
@@ -220,28 +241,15 @@ export class CardsPage implements OnInit {
       return;
     }
 
-    if (!this.subjectId()) {
-      this.saveError.set('Selecciona una materia.');
-      return;
-    }
-    if (!this.topicId()) {
-      this.saveError.set('Selecciona un tema.');
-      return;
-    }
-    if (this.isLocked(this.topicId())) {
-      this.saveError.set(this.lockMsg);
-      return;
-    }
-
     this.cardsStore
       .create({
-        topicId: this.topicId()!,
+        topicId: topic.id,
         question,
         answerTypeCode: this.answerTypeCode,
         answers,
       })
       .subscribe({
-        next: () => this.dialogVisible.set(false),
+        next: afterSave,
         error: (err) =>
           this.saveError.set(
             err?.error?.msg ?? 'No se pudo crear la pregunta.',
@@ -249,15 +257,28 @@ export class CardsPage implements OnInit {
       });
   }
 
-  protected remove(card: Flashcard): void {
-    if (this.isLocked(card.topicId)) {
+  protected remove(card: TopicFlashcard): void {
+    if (this.reviewLocked()) {
       return;
     }
     const confirmed = confirm(`¿Eliminar la pregunta "${card.question}"?`);
     if (!confirmed) {
       return;
     }
-    this.cardsStore.remove(card.id).subscribe();
+    const topicId = this.topic()?.id;
+    this.cardsStore.remove(card.id).subscribe({
+      next: () => {
+        if (topicId) {
+          this.reload(topicId);
+        }
+      },
+    });
+  }
+
+  private reload(id: string): void {
+    this.topicsStore.fetchById(id).subscribe({
+      next: (topic) => this.topic.set(topic),
+    });
   }
 
   private resetQuestionForm(): void {

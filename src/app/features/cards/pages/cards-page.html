@@ -1,0 +1,248 @@
+<div class="cards">
+  <header class="page-header page-header--row">
+    <div>
+      <h1>Preguntas</h1>
+      <p>Todas las preguntas, con su tema y materia.</p>
+    </div>
+    <p-button label="Nueva pregunta" icon="pi pi-plus" (onClick)="openCreate()" />
+  </header>
+
+  <div class="toolbar">
+    <span class="search-box">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        placeholder="Buscar por pregunta..."
+        [ngModel]="search()"
+        (ngModelChange)="onSearch($event)"
+      />
+    </span>
+    @if (cardsStore.loading()) {
+      <span class="text-small"><i class="pi pi-spin pi-spinner"></i> Cargando...</span>
+    }
+  </div>
+
+  @if (lockedTopicIds().size) {
+    <p class="lock-banner">
+      Hay temas con repaso hoy. Esas preguntas se ven, pero no se pueden editar
+      ni eliminar hasta que completes el repaso.
+    </p>
+  }
+
+  <div class="table-scroll">
+    <p-table
+      [value]="cardsStore.cards()"
+      styleClass="cards-table"
+      [tableStyle]="{ 'min-width': '36rem' }"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Pregunta</th>
+          <th>Tema</th>
+          <th>Materia</th>
+          <th style="width: 7rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-card>
+        <tr>
+          <td>{{ card.question }}</td>
+          <td>{{ card.topicTitle ?? '—' }}</td>
+          <td>{{ card.subjectTitle ?? '—' }}</td>
+          <td>
+            <div class="row-actions">
+              <p-button
+                icon="pi pi-pencil"
+                severity="secondary"
+                [text]="true"
+                [disabled]="isLocked(card.topicId)"
+                [title]="isLocked(card.topicId) ? lockMsg : 'Editar'"
+                (onClick)="openEdit(card)"
+              />
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [text]="true"
+                [disabled]="isLocked(card.topicId)"
+                [title]="isLocked(card.topicId) ? lockMsg : 'Eliminar'"
+                (onClick)="remove(card)"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="4" class="empty">Aún no hay preguntas. Crea la primera.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
+
+<p-dialog
+  [header]="editingId() ? 'Editar pregunta' : 'Nueva pregunta'"
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '44rem' }"
+  [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
+  [breakpoints]="{ '768px': '95vw' }"
+>
+  <div class="form-field">
+    <label for="card-subject">Materia</label>
+    <p-select
+      inputId="card-subject"
+      [options]="subjects.subjects()"
+      optionLabel="title"
+      optionValue="id"
+      [ngModel]="subjectId()"
+      (ngModelChange)="onSubjectChange($event)"
+      placeholder="Selecciona una materia"
+      [style]="{ width: '100%' }"
+      [filter]="true"
+      filterBy="title"
+      appendTo="body"
+      [disabled]="!!editingId()"
+      [emptyMessage]="'No hay materias. Crea una primero.'"
+    />
+  </div>
+
+  <div class="form-field">
+    <label for="card-topic">Tema</label>
+    <p-select
+      inputId="card-topic"
+      [options]="topicsForSubject()"
+      optionLabel="title"
+      optionValue="id"
+      [ngModel]="topicId()"
+      (ngModelChange)="topicId.set($event)"
+      placeholder="Selecciona un tema"
+      [style]="{ width: '100%' }"
+      [filter]="true"
+      filterBy="title"
+      appendTo="body"
+      [disabled]="!!editingId() || !subjectId()"
+      [emptyMessage]="'Esta materia aún no tiene temas.'"
+    />
+    @if (!editingId() && isLocked(topicId())) {
+      <p class="form-error">{{ lockMsg }}</p>
+    }
+  </div>
+
+  <div class="form-field">
+    <label for="card-question">Pregunta</label>
+    <textarea
+      pTextarea
+      id="card-question"
+      [(ngModel)]="questionModel"
+      rows="3"
+      placeholder="¿Qué pregunta vas a estudiar?"
+    ></textarea>
+  </div>
+
+  <fieldset class="answer-type">
+    <legend>Tipo de respuesta</legend>
+    <div class="answer-type__options">
+      @for (type of answerTypes(); track type.code) {
+        <label class="answer-type__item">
+          <p-radioButton
+            name="cardAnswerType"
+            [value]="type.code"
+            [(ngModel)]="answerTypeCode"
+            [inputId]="'card-type-' + type.code"
+          />
+          <span>{{ type.name }}</span>
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  @if (answerTypeCode === 'open_answer') {
+    <div class="form-field">
+      <label for="card-open-answer">Respuesta correcta</label>
+      <textarea
+        pTextarea
+        id="card-open-answer"
+        [(ngModel)]="openAnswer"
+        rows="3"
+        placeholder="Escribe la respuesta esperada"
+      ></textarea>
+    </div>
+  } @else {
+    <div class="options">
+      <div class="options__header">
+        <label>Opciones de respuesta</label>
+        <p-button
+          label="Agregar opción"
+          icon="pi pi-plus"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="addOption()"
+        />
+      </div>
+
+      @for (option of options; track $index; let i = $index) {
+        <div class="option-row">
+          @if (answerTypeCode === 'single_choice') {
+            <p-radioButton
+              name="cardCorrectOption"
+              [value]="i"
+              [(ngModel)]="singleCorrectIndex"
+              [inputId]="'card-correct-' + i"
+            />
+          } @else {
+            <p-checkbox
+              [(ngModel)]="option.isCorrect"
+              [binary]="true"
+              [inputId]="'card-correct-' + i"
+            />
+          }
+          <input
+            pInputText
+            [(ngModel)]="option.text"
+            [placeholder]="'Opción ' + (i + 1)"
+            autocomplete="off"
+          />
+          <p-button
+            icon="pi pi-times"
+            severity="danger"
+            [text]="true"
+            [disabled]="options.length <= 2"
+            (onClick)="removeOption(i)"
+          />
+        </div>
+      }
+      <p class="hint">
+        @if (answerTypeCode === 'single_choice') {
+          Elige con el radio cuál es la única respuesta correcta.
+        } @else {
+          Marca con el checkbox todas las respuestas correctas.
+        }
+      </p>
+    </div>
+  }
+
+  @if (questionError()) {
+    <p class="form-error">{{ questionError() }}</p>
+  }
+  @if (saveError()) {
+    <p class="form-error">{{ saveError() }}</p>
+  }
+
+  <ng-template #footer>
+    <p-button
+      label="Cancelar"
+      severity="secondary"
+      [text]="true"
+      [disabled]="cardsStore.saving()"
+      (onClick)="dialogVisible.set(false)"
+    />
+    <p-button
+      label="Guardar pregunta"
+      icon="pi pi-check"
+      [loading]="cardsStore.saving()"
+      (onClick)="save()"
+    />
+  </ng-template>
+</p-dialog>

@@ -20,6 +20,7 @@ describe('DashboardApi', () => {
       dueToday: 2,
       topicCount: 4,
       retentionRate: 81.2,
+      subjects: [{ id: 's1', dueToday: 1, inProgress: 3 }],
     };
     const pending = firstValueFrom(api.stats('2026-08-17'));
     const req = http.expectOne(

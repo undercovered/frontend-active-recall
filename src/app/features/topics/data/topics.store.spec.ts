@@ -11,6 +11,7 @@ describe('TopicsStore', () => {
   let store: TopicsStore;
   let api: {
     getAll: ReturnType<typeof vi.fn>;
+    getById: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
     remove: ReturnType<typeof vi.fn>;
@@ -19,6 +20,13 @@ describe('TopicsStore', () => {
   beforeEach(() => {
     api = {
       getAll: vi.fn(() => of([loops, classes])),
+      getById: vi.fn(() =>
+        of({
+          ...loops,
+          subjectTitle: 'Java',
+          flashcards: [],
+        }),
+      ),
       create: vi.fn(() => of(loops)),
       update: vi.fn(() => of({ ...loops, title: 'For' })),
       remove: vi.fn(() => of(undefined)),
@@ -35,6 +43,12 @@ describe('TopicsStore', () => {
     expect(store.topics()).toEqual([loops, classes]);
     expect(store.count()).toBe(2);
     expect(store.loading()).toBe(false);
+  });
+
+  it('fetchById upserts the hydrated topic', () => {
+    store.fetchById('1').subscribe();
+    expect(api.getById).toHaveBeenCalledWith('1');
+    expect(store.topics()[0].subjectTitle).toBe('Java');
   });
 
   it('create, update and remove mutate the list', () => {

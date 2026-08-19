@@ -26,6 +26,20 @@ export class TopicsStore {
       });
   }
 
+  /** Fetches one topic with its questions (GET /topics/:id). */
+  fetchById(id: string): Observable<Topic> {
+    return this.api.getById(id).pipe(
+      tap((topic) =>
+        this._topics.update((list) => {
+          const exists = list.some((t) => t.id === topic.id);
+          return exists
+            ? list.map((t) => (t.id === topic.id ? { ...t, ...topic } : t))
+            : [topic, ...list];
+        }),
+      ),
+    );
+  }
+
   create(input: CreateTopic): Observable<Topic> {
     this._saving.set(true);
     return this.api.create(input).pipe(

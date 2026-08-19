@@ -5,6 +5,7 @@ export interface DueToday {
   hasPending: boolean;
   count: number;
   topicCount: number;
+  topicIds?: string[];
 }
 
 export type ReviewCardState = 'pending' | 'awaiting_grade' | 'graded';

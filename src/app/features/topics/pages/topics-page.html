@@ -1,107 +1,75 @@
-<nav class="crumbs">
-  <a routerLink="/subjects">Materias</a>
-  <i class="pi pi-angle-right"></i>
-  <span>{{ subject()?.title ?? 'Materia' }}</span>
-</nav>
-
-@if (loading()) {
-  <p-card>
-    <div class="empty"><i class="pi pi-spin pi-spinner"></i> Cargando materia...</div>
-  </p-card>
-} @else if (error()) {
-  <p-card>
-    <div class="empty">
-      {{ error() }}
-      <div style="margin-top: 1rem">
-        <p-button label="Volver a materias" icon="pi pi-arrow-left" routerLink="/subjects" />
-      </div>
-    </div>
-  </p-card>
-} @else if (subject(); as s) {
+<div class="topics">
   <header class="page-header page-header--row">
     <div>
-      <h1>{{ s.title }}</h1>
-      <p>Temas de esta materia.</p>
+      <h1>Temas</h1>
+      <p>Todos los temas, con su materia.</p>
     </div>
     <p-button label="Nuevo tema" icon="pi pi-plus" (onClick)="openCreate()" />
   </header>
 
-  @if (lockedTopicIds().size) {
-    <p class="lock-banner">
-      Hay temas con repaso hoy. No se pueden agregar preguntas a esos temas
-      hasta que completes el repaso.
-    </p>
-  }
+  <div class="toolbar">
+    <span class="search-box">
+      <i class="pi pi-search"></i>
+      <input
+        pInputText
+        type="text"
+        placeholder="Buscar por nombre..."
+        [ngModel]="search()"
+        (ngModelChange)="onSearch($event)"
+      />
+    </span>
+    @if (topicsStore.loading()) {
+      <span class="text-small"><i class="pi pi-spin pi-spinner"></i> Cargando...</span>
+    }
+  </div>
 
-  @if (s.description) {
-    <p-card styleClass="subject-desc">
-      <div class="rich-text" [innerHTML]="s.description"></div>
-    </p-card>
-  }
-
-  @if (topicsStore.loading()) {
-    <p class="text-small"><i class="pi pi-spin pi-spinner"></i> Cargando temas...</p>
-  }
-
-  <p-table
-    [value]="topicsStore.topics()"
-    styleClass="topics-table"
-    [tableStyle]="{ 'min-width': '32rem' }"
-  >
-    <ng-template #header>
-      <tr>
-        <th>Título</th>
-        <th>Descripción</th>
-        <th style="width: 10rem"></th>
-      </tr>
-    </ng-template>
-    <ng-template #body let-topic>
-      <tr>
-        <td>
-          <a class="topic-link" [routerLink]="['/topics', topic.id]">
-            {{ topic.title }}
-          </a>
-        </td>
-        <td>
-          @if (topic.description) {
-            <div class="rich-text cell-desc" [innerHTML]="topic.description"></div>
-          } @else {
-            <span class="text-muted">—</span>
-          }
-        </td>
-        <td>
-          <div class="row-actions">
-            <p-button
-              icon="pi pi-question-circle"
-              severity="secondary"
-              [text]="true"
-              [disabled]="isLocked(topic.id)"
-              [title]="isLocked(topic.id) ? lockMsg : 'Agregar pregunta'"
-              (onClick)="openAddQuestion(topic)"
-            />
-            <p-button
-              icon="pi pi-pencil"
-              severity="secondary"
-              [text]="true"
-              (onClick)="openEdit(topic)"
-            />
-            <p-button
-              icon="pi pi-trash"
-              severity="danger"
-              [text]="true"
-              (onClick)="remove(topic)"
-            />
-          </div>
-        </td>
-      </tr>
-    </ng-template>
-    <ng-template #emptymessage>
-      <tr>
-        <td colspan="3" class="empty">Aún no hay temas en esta materia. Crea el primero.</td>
-      </tr>
-    </ng-template>
-  </p-table>
-}
+  <div class="table-scroll">
+    <p-table
+      [value]="topicsStore.topics()"
+      styleClass="topics-table"
+      [tableStyle]="{ 'min-width': '32rem' }"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Tema</th>
+          <th>Materia</th>
+          <th style="width: 7rem"></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-topic>
+        <tr>
+          <td>
+            <a class="topic-link" [routerLink]="['/topics', topic.id]">
+              {{ topic.title }}
+            </a>
+          </td>
+          <td>{{ subjectTitle(topic.subjectId) }}</td>
+          <td>
+            <div class="row-actions">
+              <p-button
+                icon="pi pi-pencil"
+                severity="secondary"
+                [text]="true"
+                (onClick)="openEdit(topic)"
+              />
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [text]="true"
+                (onClick)="remove(topic)"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="3" class="empty">Aún no hay temas. Crea el primero.</td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </div>
+</div>
 
 <p-dialog
   [header]="editingId() ? 'Editar tema' : 'Nuevo tema'"
@@ -112,6 +80,24 @@
   [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
   [breakpoints]="{ '768px': '95vw' }"
 >
+  <div class="form-field">
+    <label for="topic-subject">Materia</label>
+    <p-select
+      inputId="topic-subject"
+      [options]="subjects.subjects()"
+      optionLabel="title"
+      optionValue="id"
+      [(ngModel)]="subjectIdModel"
+      placeholder="Selecciona una materia"
+      [style]="{ width: '100%' }"
+      [filter]="true"
+      filterBy="title"
+      appendTo="body"
+      [disabled]="!!editingId()"
+      [emptyMessage]="'No hay materias. Crea una primero.'"
+    />
+  </div>
+
   <div class="form-field">
     <label for="topic-title">Título</label>
     <input
@@ -304,8 +290,7 @@
     }
 
     <p class="hint">
-      Al crear el tema se programan 7 repasos automáticos: mañana, día 4, día 11,
-      día 26, +30 días, +3 meses y +6 meses.
+      Al crear el tema se programan 7 repasos automáticos.
     </p>
   }
 
@@ -326,139 +311,6 @@
       icon="pi pi-check"
       [loading]="topicsStore.saving()"
       (onClick)="save()"
-    />
-  </ng-template>
-</p-dialog>
-
-<p-dialog
-  [header]="'Nueva pregunta · ' + (questionTopic()?.title ?? 'tema')"
-  [visible]="questionDialogVisible()"
-  (visibleChange)="questionDialogVisible.set($event)"
-  [modal]="true"
-  [style]="{ width: '44rem' }"
-  [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
-  [breakpoints]="{ '768px': '95vw' }"
->
-  <p class="hint">
-    Se agregará a {{ questionTopic()?.title }}
-    @if (subject(); as s) {
-      · {{ s.title }}
-    }
-  </p>
-
-  <div class="form-field">
-    <label for="existing-topic-question">Pregunta</label>
-    <textarea
-      pTextarea
-      id="existing-topic-question"
-      [(ngModel)]="questionModel"
-      rows="3"
-      placeholder="¿Qué pregunta vas a estudiar?"
-    ></textarea>
-  </div>
-
-  <fieldset class="answer-type">
-    <legend>Tipo de respuesta</legend>
-    <div class="answer-type__options">
-      @for (type of answerTypes(); track type.code) {
-        <label class="answer-type__item">
-          <p-radioButton
-            name="existingAnswerType"
-            [value]="type.code"
-            [(ngModel)]="answerTypeCode"
-            [inputId]="'existing-type-' + type.code"
-          />
-          <span>{{ type.name }}</span>
-        </label>
-      }
-    </div>
-  </fieldset>
-
-  @if (answerTypeCode === 'open_answer') {
-    <div class="form-field">
-      <label for="existing-open-answer">Respuesta correcta</label>
-      <textarea
-        pTextarea
-        id="existing-open-answer"
-        [(ngModel)]="openAnswer"
-        rows="3"
-        placeholder="Escribe la respuesta esperada"
-      ></textarea>
-    </div>
-  } @else {
-    <div class="options">
-      <div class="options__header">
-        <label>Opciones de respuesta</label>
-        <p-button
-          label="Agregar opción"
-          icon="pi pi-plus"
-          severity="secondary"
-          [outlined]="true"
-          (onClick)="addOption()"
-        />
-      </div>
-
-      @for (option of options; track $index; let i = $index) {
-        <div class="option-row">
-          @if (answerTypeCode === 'single_choice') {
-            <p-radioButton
-              name="existingCorrectOption"
-              [value]="i"
-              [(ngModel)]="singleCorrectIndex"
-              [inputId]="'existing-correct-' + i"
-            />
-          } @else {
-            <p-checkbox
-              [(ngModel)]="option.isCorrect"
-              [binary]="true"
-              [inputId]="'existing-correct-' + i"
-            />
-          }
-          <input
-            pInputText
-            [(ngModel)]="option.text"
-            [placeholder]="'Opción ' + (i + 1)"
-            autocomplete="off"
-          />
-          <p-button
-            icon="pi pi-times"
-            severity="danger"
-            [text]="true"
-            [disabled]="options.length <= 2"
-            (onClick)="removeOption(i)"
-          />
-        </div>
-      }
-      <p class="hint">
-        @if (answerTypeCode === 'single_choice') {
-          Elige con el radio cuál es la única respuesta correcta.
-        } @else {
-          Marca con el checkbox todas las respuestas correctas.
-        }
-      </p>
-    </div>
-  }
-
-  @if (questionError()) {
-    <p class="form-error">{{ questionError() }}</p>
-  }
-  @if (saveError()) {
-    <p class="form-error">{{ saveError() }}</p>
-  }
-
-  <ng-template #footer>
-    <p-button
-      label="Cancelar"
-      severity="secondary"
-      [text]="true"
-      [disabled]="cardsStore.saving()"
-      (onClick)="questionDialogVisible.set(false)"
-    />
-    <p-button
-      label="Guardar pregunta"
-      icon="pi pi-check"
-      [loading]="cardsStore.saving()"
-      (onClick)="saveExistingTopicQuestion()"
     />
   </ng-template>
 </p-dialog>

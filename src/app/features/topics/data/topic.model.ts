@@ -3,6 +3,7 @@ export interface Topic {
   title: string;
   description?: string | null;
   subjectId: string;
+  subjectTitle?: string;
   deleted?: boolean;
   createdAt?: string;
   updatedAt?: string;

@@ -78,8 +78,12 @@
               <div class="deck__desc rich-text" [innerHTML]="subject.description"></div>
             }
             <div class="deck__pills">
-              <span class="pill pill--review">0 para repasar</span>
-              <span class="pill pill--new">0 nuevas</span>
+              <span class="pill pill--review">
+                {{ deckCounts(subject.id).dueToday }} para repasar
+              </span>
+              <span class="pill pill--new">
+                {{ deckCounts(subject.id).inProgress }} en proceso
+              </span>
             </div>
           </div>
         </p-card>

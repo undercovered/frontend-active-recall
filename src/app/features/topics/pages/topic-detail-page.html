@@ -1,0 +1,244 @@
+<nav class="crumbs">
+  <a routerLink="/topics">Temas</a>
+  <i class="pi pi-angle-right"></i>
+  @if (topic(); as t) {
+    <a [routerLink]="['/subjects', t.subjectId, 'topics']">
+      {{ t.subjectTitle ?? 'Materia' }}
+    </a>
+    <i class="pi pi-angle-right"></i>
+    <span>{{ t.title }}</span>
+  } @else {
+    <span>Tema</span>
+  }
+</nav>
+
+@if (loading()) {
+  <p-card>
+    <div class="empty"><i class="pi pi-spin pi-spinner"></i> Cargando tema...</div>
+  </p-card>
+} @else if (error()) {
+  <p-card>
+    <div class="empty">
+      {{ error() }}
+      <div style="margin-top: 1rem">
+        <p-button label="Volver a temas" icon="pi pi-arrow-left" routerLink="/topics" />
+      </div>
+    </div>
+  </p-card>
+} @else if (topic(); as t) {
+  <header class="page-header page-header--row">
+    <div>
+      <h1>{{ t.title }}</h1>
+      <p>Preguntas de este tema.</p>
+    </div>
+    <p-button
+      label="Nueva pregunta"
+      icon="pi pi-plus"
+      [disabled]="reviewLocked()"
+      [title]="reviewLocked() ? lockMsg : 'Nueva pregunta'"
+      (onClick)="openCreate()"
+    />
+  </header>
+
+  @if (reviewLocked()) {
+    <p class="lock-banner">{{ lockMsg }}</p>
+  }
+
+  @if (t.description) {
+    <p-card styleClass="topic-desc">
+      <div class="rich-text" [innerHTML]="t.description"></div>
+    </p-card>
+  } @else {
+    <p class="text-muted no-desc">Este tema no tiene descripción.</p>
+  }
+
+  <p-table
+    [value]="questions()"
+    styleClass="questions-table"
+    [tableStyle]="{ 'min-width': '32rem' }"
+  >
+    <ng-template #header>
+      <tr>
+        <th>Pregunta</th>
+        <th>Tipo</th>
+        <th>Respuestas</th>
+        <th style="width: 7rem"></th>
+      </tr>
+    </ng-template>
+    <ng-template #body let-card>
+      <tr>
+        <td>{{ card.question }}</td>
+        <td>{{ typeLabel(card) }}</td>
+        <td>
+          <ul class="answers">
+            @for (answer of card.answers; track answer.id ?? answer.answerText) {
+              <li [class.answers__correct]="answer.isCorrect">
+                {{ answer.answerText }}
+              </li>
+            }
+          </ul>
+        </td>
+        <td>
+          <div class="row-actions">
+            <p-button
+              icon="pi pi-pencil"
+              severity="secondary"
+              [text]="true"
+              [disabled]="reviewLocked()"
+              [title]="reviewLocked() ? lockMsg : 'Editar'"
+              (onClick)="openEdit(card)"
+            />
+            <p-button
+              icon="pi pi-trash"
+              severity="danger"
+              [text]="true"
+              [disabled]="reviewLocked()"
+              [title]="reviewLocked() ? lockMsg : 'Eliminar'"
+              (onClick)="remove(card)"
+            />
+          </div>
+        </td>
+      </tr>
+    </ng-template>
+    <ng-template #emptymessage>
+      <tr>
+        <td colspan="4" class="empty">
+          Aún no hay preguntas en este tema. Crea la primera.
+        </td>
+      </tr>
+    </ng-template>
+  </p-table>
+}
+
+<p-dialog
+  [header]="editingId() ? 'Editar pregunta' : 'Nueva pregunta'"
+  [visible]="dialogVisible()"
+  (visibleChange)="dialogVisible.set($event)"
+  [modal]="true"
+  [style]="{ width: '44rem' }"
+  [contentStyle]="{ 'max-height': '70vh', overflow: 'auto' }"
+  [breakpoints]="{ '768px': '95vw' }"
+>
+  <p class="hint">
+    Se agregará a {{ topic()?.title }}
+    @if (topic()?.subjectTitle; as subjectTitle) {
+      · {{ subjectTitle }}
+    }
+  </p>
+
+  <div class="form-field">
+    <label for="detail-question">Pregunta</label>
+    <textarea
+      pTextarea
+      id="detail-question"
+      [(ngModel)]="questionModel"
+      rows="3"
+      placeholder="¿Qué pregunta vas a estudiar?"
+    ></textarea>
+  </div>
+
+  <fieldset class="answer-type">
+    <legend>Tipo de respuesta</legend>
+    <div class="answer-type__options">
+      @for (type of answerTypes(); track type.code) {
+        <label class="answer-type__item">
+          <p-radioButton
+            name="detailAnswerType"
+            [value]="type.code"
+            [(ngModel)]="answerTypeCode"
+            [inputId]="'detail-type-' + type.code"
+          />
+          <span>{{ type.name }}</span>
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  @if (answerTypeCode === 'open_answer') {
+    <div class="form-field">
+      <label for="detail-open-answer">Respuesta correcta</label>
+      <textarea
+        pTextarea
+        id="detail-open-answer"
+        [(ngModel)]="openAnswer"
+        rows="3"
+        placeholder="Escribe la respuesta esperada"
+      ></textarea>
+    </div>
+  } @else {
+    <div class="options">
+      <div class="options__header">
+        <label>Opciones de respuesta</label>
+        <p-button
+          label="Agregar opción"
+          icon="pi pi-plus"
+          severity="secondary"
+          [outlined]="true"
+          (onClick)="addOption()"
+        />
+      </div>
+
+      @for (option of options; track $index; let i = $index) {
+        <div class="option-row">
+          @if (answerTypeCode === 'single_choice') {
+            <p-radioButton
+              name="detailCorrectOption"
+              [value]="i"
+              [(ngModel)]="singleCorrectIndex"
+              [inputId]="'detail-correct-' + i"
+            />
+          } @else {
+            <p-checkbox
+              [(ngModel)]="option.isCorrect"
+              [binary]="true"
+              [inputId]="'detail-correct-' + i"
+            />
+          }
+          <input
+            pInputText
+            [(ngModel)]="option.text"
+            [placeholder]="'Opción ' + (i + 1)"
+            autocomplete="off"
+          />
+          <p-button
+            icon="pi pi-times"
+            severity="danger"
+            [text]="true"
+            [disabled]="options.length <= 2"
+            (onClick)="removeOption(i)"
+          />
+        </div>
+      }
+      <p class="hint">
+        @if (answerTypeCode === 'single_choice') {
+          Elige con el radio cuál es la única respuesta correcta.
+        } @else {
+          Marca con el checkbox todas las respuestas correctas.
+        }
+      </p>
+    </div>
+  }
+
+  @if (questionError()) {
+    <p class="form-error">{{ questionError() }}</p>
+  }
+  @if (saveError()) {
+    <p class="form-error">{{ saveError() }}</p>
+  }
+
+  <ng-template #footer>
+    <p-button
+      label="Cancelar"
+      severity="secondary"
+      [text]="true"
+      [disabled]="cardsStore.saving()"
+      (onClick)="dialogVisible.set(false)"
+    />
+    <p-button
+      label="Guardar pregunta"
+      icon="pi pi-check"
+      [loading]="cardsStore.saving()"
+      (onClick)="save()"
+    />
+  </ng-template>
+</p-dialog>

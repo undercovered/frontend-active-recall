@@ -23,6 +23,7 @@ describe('app routes', () => {
       'subjects',
       'subjects/:id/topics',
       'topics',
+      'topics/:id',
       'cards',
       'review',
     ]);

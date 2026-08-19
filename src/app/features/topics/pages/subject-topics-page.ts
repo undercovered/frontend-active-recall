@@ -15,6 +15,10 @@ import { SubjectsStore } from '../../subjects/data/subjects.store';
 import { Subject } from '../../subjects/data/subject.model';
 import { TopicsStore } from '../data/topics.store';
 import { AnswerTypesApi } from '../data/answer-types.api';
+import { FlashcardsStore } from '../../cards/data/flashcards.store';
+import { ReviewsApi } from '../../review/data/reviews.api';
+import { localIsoDate } from '../../../core/date/local-iso-date';
+import { TOPIC_REVIEW_LOCK_MSG } from '../../review/data/review-lock';
 import {
   AnswerType,
   AnswerTypeCode,
@@ -50,12 +54,19 @@ export class SubjectTopicsPage implements OnInit {
   private readonly subjects = inject(SubjectsStore);
   private readonly answerTypesApi = inject(AnswerTypesApi);
   protected readonly topicsStore = inject(TopicsStore);
+  protected readonly cardsStore = inject(FlashcardsStore);
+  private readonly reviewsApi = inject(ReviewsApi);
+
+  protected readonly lockMsg = TOPIC_REVIEW_LOCK_MSG;
+  protected readonly lockedTopicIds = signal<ReadonlySet<string>>(new Set());
 
   protected readonly subject = signal<Subject | null>(null);
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
 
   protected readonly dialogVisible = signal(false);
+  protected readonly questionDialogVisible = signal(false);
+  protected readonly questionTopic = signal<Topic | null>(null);
   protected readonly editingId = signal<string | null>(null);
   protected readonly saveError = signal<string | null>(null);
   protected readonly questionError = signal<string | null>(null);
@@ -97,6 +108,10 @@ export class SubjectTopicsPage implements OnInit {
       error: () => this.answerTypes.set(this.fallbackTypes),
     });
 
+    this.reviewsApi.dueToday(localIsoDate()).subscribe({
+      next: (due) => this.lockedTopicIds.set(new Set(due.topicIds ?? [])),
+    });
+
     this.route.paramMap
       .pipe(
         switchMap((params) => {
@@ -129,6 +144,10 @@ export class SubjectTopicsPage implements OnInit {
     return this.answerTypes().find((t) => t.code === code)?.name ?? code;
   }
 
+  protected isLocked(topicId: string | null | undefined): boolean {
+    return !!topicId && this.lockedTopicIds().has(topicId);
+  }
+
   protected openCreate(): void {
     this.editingId.set(null);
     this.saveError.set(null);
@@ -148,6 +167,53 @@ export class SubjectTopicsPage implements OnInit {
     this.titleModel = topic.title;
     this.descriptionModel = topic.description ?? '';
     this.dialogVisible.set(true);
+  }
+
+  protected openAddQuestion(topic: Topic): void {
+    if (this.isLocked(topic.id)) {
+      return;
+    }
+    this.questionTopic.set(topic);
+    this.saveError.set(null);
+    this.questionError.set(null);
+    this.resetQuestionForm();
+    this.questionDialogVisible.set(true);
+  }
+
+  protected saveExistingTopicQuestion(): void {
+    const topic = this.questionTopic();
+    if (!topic) {
+      return;
+    }
+    if (this.isLocked(topic.id)) {
+      this.saveError.set(this.lockMsg);
+      return;
+    }
+    const question = this.questionModel.trim();
+    if (!question) {
+      this.questionError.set('La pregunta es obligatoria.');
+      return;
+    }
+    const answers = this.buildAnswers();
+    if (!answers) {
+      return;
+    }
+
+    this.saveError.set(null);
+    this.cardsStore
+      .create({
+        topicId: topic.id,
+        question,
+        answerTypeCode: this.answerTypeCode,
+        answers,
+      })
+      .subscribe({
+        next: () => this.questionDialogVisible.set(false),
+        error: (err) =>
+          this.saveError.set(
+            err?.error?.msg ?? 'No se pudo crear la pregunta.',
+          ),
+      });
   }
 
   protected addQuestion(): void {

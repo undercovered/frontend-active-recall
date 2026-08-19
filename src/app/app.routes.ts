@@ -46,6 +46,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'topics/:id',
+        title: 'Tema · Active Recall',
+        loadComponent: () =>
+          import('./features/topics/pages/topic-detail-page').then(
+            (m) => m.TopicDetailPage,
+          ),
+      },
+      {
         path: 'cards',
         title: 'Preguntas · Active Recall',
         loadComponent: () =>

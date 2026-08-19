@@ -7,8 +7,12 @@ import { SubjectTopicsPage } from './subject-topics-page';
 import { SubjectsStore } from '../../subjects/data/subjects.store';
 import { TopicsStore } from '../data/topics.store';
 import { AnswerTypesApi } from '../data/answer-types.api';
+import { FlashcardsStore } from '../../cards/data/flashcards.store';
+import { ReviewsApi } from '../../review/data/reviews.api';
+import { TOPIC_REVIEW_LOCK_MSG } from '../../review/data/review-lock';
 import { Subject } from '../../subjects/data/subject.model';
 import { Topic } from '../data/topic.model';
+import { Flashcard } from '../../cards/data/flashcard.model';
 
 const subject: Subject = { id: 's1', title: 'Java' };
 const topic: Topic = { id: 't1', title: 'Loops', subjectId: 's1', description: 'd' };
@@ -25,8 +29,21 @@ describe('SubjectTopicsPage', () => {
     remove: ReturnType<typeof vi.fn>;
   };
   let answerTypesApi: { getAll: ReturnType<typeof vi.fn> };
+  let cardsStore: {
+    saving: ReturnType<typeof signal<boolean>>;
+    create: ReturnType<typeof vi.fn>;
+  };
 
-  async function createPage() {
+  const createdCard: Flashcard = {
+    id: 'c1',
+    question: 'Q',
+    topicId: 't1',
+    subjectId: 's1',
+    answerTypeId: 'at-o',
+    answers: [{ answerText: 'A', isCorrect: true }],
+  };
+
+  async function createPage(dueTopicIds: string[] = []) {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [SubjectTopicsPage],
@@ -34,6 +51,20 @@ describe('SubjectTopicsPage', () => {
         { provide: SubjectsStore, useValue: subjects },
         { provide: TopicsStore, useValue: topicsStore },
         { provide: AnswerTypesApi, useValue: answerTypesApi },
+        { provide: FlashcardsStore, useValue: cardsStore },
+        {
+          provide: ReviewsApi,
+          useValue: {
+            dueToday: () =>
+              of({
+                date: '2026-08-17',
+                hasPending: dueTopicIds.length > 0,
+                count: dueTopicIds.length,
+                topicCount: dueTopicIds.length,
+                topicIds: dueTopicIds,
+              }),
+          },
+        },
         {
           provide: ActivatedRoute,
           useValue: { paramMap: of(convertToParamMap({ id: 's1' })) },
@@ -65,6 +96,10 @@ describe('SubjectTopicsPage', () => {
       getAll: vi.fn(() =>
         of([{ id: 'at-o', code: 'open_answer' as const, name: 'Abierta' }]),
       ),
+    };
+    cardsStore = {
+      saving: signal(false),
+      create: vi.fn(() => of(createdCard)),
     };
   });
 
@@ -193,5 +228,40 @@ describe('SubjectTopicsPage', () => {
     expect(page.options.length).toBe(2);
     page.removeOption(0);
     expect(page.options.length).toBe(2);
+  });
+
+  it('adds a question to an existing topic without picking subject or topic', async () => {
+    const { page } = await createPage();
+    page.openAddQuestion(topic);
+    expect(page['questionDialogVisible']()).toBe(true);
+    expect(page['questionTopic']()?.id).toBe('t1');
+
+    page.questionModel = 'What is a loop?';
+    page.answerTypeCode = 'open_answer';
+    page.openAnswer = 'A repeating block';
+    page.saveExistingTopicQuestion();
+
+    expect(cardsStore.create).toHaveBeenCalledWith({
+      topicId: 't1',
+      question: 'What is a loop?',
+      answerTypeCode: 'open_answer',
+      answers: [{ answerText: 'A repeating block', isCorrect: true }],
+    });
+  });
+
+  it('blocks adding a question while the topic has a due review', async () => {
+    const { page } = await createPage(['t1']);
+    expect(page.isLocked('t1')).toBe(true);
+
+    page.openAddQuestion(topic);
+    expect(page['questionDialogVisible']()).toBe(false);
+
+    page['questionTopic'].set(topic);
+    page.questionModel = 'Q';
+    page.answerTypeCode = 'open_answer';
+    page.openAnswer = 'A';
+    page.saveExistingTopicQuestion();
+    expect(cardsStore.create).not.toHaveBeenCalled();
+    expect(page['saveError']()).toBe(TOPIC_REVIEW_LOCK_MSG);
   });
 });

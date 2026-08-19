@@ -28,6 +28,7 @@ describe('HomePage', () => {
                 dueToday: 0,
                 topicCount: 0,
                 retentionRate: null,
+                subjects: [],
               }),
           },
         },
@@ -59,5 +60,43 @@ describe('HomePage', () => {
     store.count.set(1);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Java');
+  });
+
+  it('reads due and in-progress question counts per subject', async () => {
+    const store = {
+      subjects: signal<Subject[]>([{ id: 's1', title: 'Java' }]),
+      count: signal(1),
+      ensureLoaded: vi.fn(),
+    };
+    await TestBed.configureTestingModule({
+      imports: [HomePage],
+      providers: [
+        provideRouter([]),
+        { provide: SubjectsStore, useValue: store },
+        {
+          provide: DashboardApi,
+          useValue: {
+            stats: () =>
+              of({
+                date: '2026-08-17',
+                dueToday: 0,
+                topicCount: 1,
+                retentionRate: 100,
+                subjects: [{ id: 's1', dueToday: 0, inProgress: 4 }],
+              }),
+          },
+        },
+      ],
+    })
+      .overrideComponent(HomePage, {
+        set: { imports: [], template: `<h1>Home</h1>` },
+      })
+      .compileComponents();
+
+    const fixture = TestBed.createComponent(HomePage);
+    fixture.detectChanges();
+    const page = fixture.componentInstance as any;
+    expect(page.deckCounts('s1')).toEqual({ dueToday: 0, inProgress: 4 });
+    expect(page.deckCounts('missing')).toEqual({ dueToday: 0, inProgress: 0 });
   });
 });

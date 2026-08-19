@@ -27,4 +27,12 @@ export class HomePage implements OnInit {
     const rate = this.stats()?.retentionRate;
     return rate === null || rate === undefined ? '—' : `${rate}%`;
   }
+
+  protected deckCounts(subjectId: string): { dueToday: number; inProgress: number } {
+    const row = this.stats()?.subjects?.find((s) => s.id === subjectId);
+    return {
+      dueToday: row?.dueToday ?? 0,
+      inProgress: row?.inProgress ?? 0,
+    };
+  }
 }
