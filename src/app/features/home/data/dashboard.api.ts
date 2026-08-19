@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/http/api-response';
-import { DashboardStats } from './dashboard.model';
+import { DashboardStats, StudyStreak } from './dashboard.model';
 
 @Injectable({ providedIn: 'root' })
 export class DashboardApi {
@@ -14,6 +14,13 @@ export class DashboardApi {
     const params = date ? new HttpParams().set('date', date) : undefined;
     return this.http
       .get<ApiResponse<DashboardStats>>(`${this.baseUrl}/stats`, { params })
+      .pipe(map((res) => res.data));
+  }
+
+  streak(date?: string): Observable<StudyStreak> {
+    const params = date ? new HttpParams().set('date', date) : undefined;
+    return this.http
+      .get<ApiResponse<StudyStreak>>(`${this.baseUrl}/streak`, { params })
       .pipe(map((res) => res.data));
   }
 }

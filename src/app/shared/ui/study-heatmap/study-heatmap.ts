@@ -1,12 +1,11 @@
 import {
   Component,
-  DestroyRef,
   ElementRef,
   afterNextRender,
   computed,
-  inject,
+  effect,
   input,
-  signal,
+  viewChild,
 } from '@angular/core';
 
 interface HeatCell {
@@ -17,11 +16,9 @@ interface HeatCell {
 }
 
 /**
- * GitHub-style contribution heatmap to visualize study streaks.
- *
- * Fills the host width with square cells. The number of week-columns is
- * derived from a ResizeObserver on the host (which is display:block; 100%),
- * so phones show fewer weeks instead of overflowing the card.
+ * GitHub-style heatmap of days the learner actually reviewed.
+ * Starts on the month the account was created and scrolls horizontally
+ * so the full history stays reachable.
  */
 @Component({
   selector: 'app-study-heatmap',
@@ -30,56 +27,39 @@ interface HeatCell {
 })
 export class StudyHeatmap {
   readonly data = input<Record<string, number>>({});
-  readonly maxWeeks = input<number>(30);
-  readonly minWeeks = input<number>(8);
+  /** First day of the account-creation month (YYYY-MM-DD). */
+  readonly startedAt = input<string | null>(null);
+  /** Override "today" in tests (YYYY-MM-DD). */
+  readonly today = input<string | null>(null);
 
-  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly destroyRef = inject(DestroyRef);
-  private readonly availableWidth = signal(0);
-
-  /** Cell + gap. Larger pitch → fewer, bigger squares on small screens. */
-  private readonly columnPitch = 14;
-  private readonly yAxisWidth = 28;
+  private readonly scroller = viewChild<ElementRef<HTMLElement>>('scroller');
 
   protected readonly weekdayLabels = ['', 'Lun', '', 'Mié', '', 'Vie', ''];
-  protected readonly showWeekdays = computed(() => this.availableWidth() >= 260);
 
   constructor() {
-    afterNextRender(() => {
-      const el = this.host.nativeElement;
-      this.availableWidth.set(el.clientWidth);
-      const observer = new ResizeObserver((entries) => {
-        const width = entries[0]?.contentRect.width ?? el.clientWidth;
-        this.availableWidth.set(width);
-      });
-      observer.observe(el);
-      this.destroyRef.onDestroy(() => observer.disconnect());
+    afterNextRender(() => this.scrollToEnd());
+    effect(() => {
+      this.columns();
+      this.scrollToEnd();
     });
   }
 
-  protected readonly weeks = computed(() => {
-    const width = this.availableWidth();
-    // Until measured, stay conservative so the first paint never overflows.
-    if (!width) return this.minWeeks();
-    const axis = this.showWeekdays() ? this.yAxisWidth : 0;
-    const usable = Math.max(0, width - axis);
-    const fit = Math.floor(usable / this.columnPitch);
-    return Math.max(this.minWeeks(), Math.min(this.maxWeeks(), fit));
-  });
-
   protected readonly columns = computed<HeatCell[][]>(() => {
     const data = this.data();
-    const totalWeeks = this.weeks();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = this.parseDay(this.today()) ?? this.startOfLocalDay(new Date());
+    const origin =
+      this.parseDay(this.startedAt()) ??
+      new Date(today.getFullYear(), today.getMonth(), 1);
 
-    const start = new Date(today);
-    start.setDate(start.getDate() - (totalWeeks - 1) * 7 - today.getDay());
+    const start = new Date(origin);
+    start.setDate(start.getDate() - start.getDay());
+
+    const end = new Date(today);
+    end.setDate(end.getDate() + (6 - end.getDay()));
 
     const cols: HeatCell[][] = [];
     const cursor = new Date(start);
-
-    for (let w = 0; w < totalWeeks; w++) {
+    while (cursor <= end) {
       const week: HeatCell[] = [];
       for (let d = 0; d < 7; d++) {
         const iso = this.toIso(cursor);
@@ -92,6 +72,8 @@ export class StudyHeatmap {
     }
     return cols;
   });
+
+  protected readonly weeks = computed(() => this.columns().length);
 
   protected readonly monthLabels = computed<string[]>(() => {
     const abbr = [
@@ -108,6 +90,28 @@ export class StudyHeatmap {
       return '';
     });
   });
+
+  private scrollToEnd(): void {
+    const el = this.scroller()?.nativeElement;
+    if (!el) return;
+    queueMicrotask(() => {
+      el.scrollLeft = el.scrollWidth;
+    });
+  }
+
+  private parseDay(value: string | null | undefined): Date | null {
+    const match = String(value ?? '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    date.setHours(0, 0, 0, 0);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  private startOfLocalDay(date: Date): Date {
+    const copy = new Date(date);
+    copy.setHours(0, 0, 0, 0);
+    return copy;
+  }
 
   private toIso(date: Date): string {
     const y = date.getFullYear();

@@ -32,4 +32,22 @@ describe('DashboardApi', () => {
     await expect(pending).resolves.toEqual(payload);
     http.verify();
   });
+
+  it('unwraps GET /dashboard/streak', async () => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    const api = TestBed.inject(DashboardApi);
+    const http = TestBed.inject(HttpTestingController);
+    const payload = {
+      startedAt: '2026-03-01',
+      today: '2026-08-18',
+      days: { '2026-08-18': 2 },
+    };
+    const pending = firstValueFrom(api.streak());
+    const req = http.expectOne(`${environment.apiUrl}/dashboard/streak`);
+    req.flush({ data: payload, msg: '' });
+    await expect(pending).resolves.toEqual(payload);
+    http.verify();
+  });
 });

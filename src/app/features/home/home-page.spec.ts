@@ -30,6 +30,12 @@ describe('HomePage', () => {
                 retentionRate: null,
                 subjects: [],
               }),
+            streak: () =>
+              of({
+                startedAt: '2026-08-01',
+                today: '2026-08-17',
+                days: {},
+              }),
           },
         },
       ],
@@ -83,6 +89,12 @@ describe('HomePage', () => {
                 topicCount: 1,
                 retentionRate: 100,
                 subjects: [{ id: 's1', dueToday: 0, inProgress: 4 }],
+              }),
+            streak: () =>
+              of({
+                startedAt: '2026-08-01',
+                today: '2026-08-17',
+                days: { '2026-08-17': 1 },
               }),
           },
         },

@@ -35,6 +35,10 @@ export class ReviewReminderService {
       .subscribe((e) => {
         if (this.isReviewUrl(e.urlAfterRedirects) || this.isLoginUrl(e.urlAfterRedirects)) {
           this.visible.set(false);
+          return;
+        }
+        if (this.auth.isAuthenticated()) {
+          this.checkDueToday();
         }
       });
 

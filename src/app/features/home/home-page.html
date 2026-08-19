@@ -7,9 +7,13 @@
 <p-card styleClass="dash-card">
   <div class="dash-card__title">
     <h2>Tu racha de estudio</h2>
-    <small>Últimos meses</small>
+    <small>Desde que creaste tu cuenta · historial de repasos</small>
   </div>
-  <app-study-heatmap />
+  <app-study-heatmap
+    [data]="streak()?.days ?? {}"
+    [startedAt]="streak()?.startedAt ?? null"
+    [today]="streak()?.today ?? null"
+  />
 </p-card>
 
 <!-- Key metrics -->

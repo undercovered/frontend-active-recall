@@ -120,4 +120,18 @@ describe('ReviewReminderService', () => {
     service.init();
     expect(api.dueToday).not.toHaveBeenCalled();
   });
+
+  it('checks due-today after navigating away from /login', () => {
+    router.url = '/login';
+    api.dueToday.mockImplementation(() => ({
+      subscribe: ({ next }: { next: (v: DueToday) => void }) => next(due()),
+    }));
+    service.init();
+    expect(api.dueToday).not.toHaveBeenCalled();
+
+    router.url = '/';
+    events.next(new NavigationEnd(2, '/login', '/'));
+    expect(api.dueToday).toHaveBeenCalledTimes(1);
+    expect(service.visible()).toBe(true);
+  });
 });

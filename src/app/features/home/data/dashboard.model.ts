@@ -11,3 +11,9 @@ export interface DashboardStats {
   retentionRate: number | null;
   subjects: DashboardSubjectStats[];
 }
+
+export interface StudyStreak {
+  startedAt: string;
+  today: string;
+  days: Record<string, number>;
+}
