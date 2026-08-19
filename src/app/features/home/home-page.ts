@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CardModule } from 'primeng/card';
 import { ButtonModule } from 'primeng/button';
@@ -6,6 +6,11 @@ import { SubjectsStore } from '../subjects/data/subjects.store';
 import { StudyHeatmap } from '../../shared/ui/study-heatmap/study-heatmap';
 import { DashboardApi } from './data/dashboard.api';
 import { DashboardStats, StudyStreak } from './data/dashboard.model';
+import {
+  bucketAttemptsByLocalDay,
+  localYmd,
+  normalizeDayCounts,
+} from './data/study-streak.util';
 
 @Component({
   selector: 'app-home-page',
@@ -22,8 +27,22 @@ export class HomePage implements OnInit {
   ngOnInit(): void {
     this.subjectsStore.ensureLoaded();
     this.dashboardApi.stats().subscribe((data) => this.stats.set(data));
-    this.dashboardApi.streak().subscribe((data) => this.streak.set(data));
+    this.dashboardApi.streak(localYmd(new Date())).subscribe({
+      next: (data) => this.streak.set(data),
+      error: () => this.streak.set(null),
+    });
   }
+
+  protected readonly heatmapDays = computed(() => {
+    const streak = this.streak();
+    if (!streak) return {};
+    if (streak.attempts?.length) {
+      return bucketAttemptsByLocalDay(streak.attempts);
+    }
+    return normalizeDayCounts(streak.days);
+  });
+
+  protected readonly heatmapToday = computed(() => localYmd(new Date()));
 
   protected retentionLabel(): string {
     const rate = this.stats()?.retentionRate;

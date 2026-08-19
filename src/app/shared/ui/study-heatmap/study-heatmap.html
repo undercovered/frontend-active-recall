@@ -1,33 +1,32 @@
-<div class="heatmap-scroll" #scroller>
-  <div class="heatmap" [style.--cols]="weeks()">
-    <div class="heatmap__x">
-      <div class="heatmap__x-spacer"></div>
-      <div class="heatmap__months">
-        @for (label of monthLabels(); track $index) {
-          <span class="heatmap__month">{{ label }}</span>
-        }
-      </div>
+<div class="heatmap" [style.--cols]="weeks()">
+  <div class="heatmap__x">
+    <div class="heatmap__x-spacer"></div>
+    <div class="heatmap__months">
+      @for (label of monthLabels(); track $index) {
+        <span class="heatmap__month">{{ label }}</span>
+      }
+    </div>
+  </div>
+
+  <div class="heatmap__main">
+    <div class="heatmap__weekdays">
+      @for (label of weekdayLabels; track $index) {
+        <span>{{ label }}</span>
+      }
     </div>
 
-    <div class="heatmap__main">
-      <div class="heatmap__weekdays">
-        @for (label of weekdayLabels; track $index) {
-          <span>{{ label }}</span>
+    <div class="heatmap__grid">
+      @for (week of columns(); track $index) {
+        @for (cell of week; track cell.date) {
+          <span
+            class="heatmap__cell"
+            [attr.data-level]="cell.level"
+            [class.heatmap__cell--out]="cell.outOfRange"
+            [class.heatmap__cell--future]="cell.future"
+            [title]="cell.outOfRange ? '' : cell.date + ' · ' + cell.count + ' repasos'"
+          ></span>
         }
-      </div>
-
-      <div class="heatmap__grid">
-        @for (week of columns(); track $index) {
-          @for (cell of week; track cell.date) {
-            <span
-              class="heatmap__cell"
-              [attr.data-level]="cell.level"
-              [class.heatmap__cell--future]="cell.future"
-              [title]="cell.date + ' · ' + cell.count + ' repasos'"
-            ></span>
-          }
-        }
-      </div>
+      }
     </div>
   </div>
 </div>

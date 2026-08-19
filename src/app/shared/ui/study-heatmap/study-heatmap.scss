@@ -5,46 +5,42 @@
   min-width: 0;
 }
 
-.heatmap-scroll {
-  overflow-x: auto;
-  overflow-y: hidden;
-  max-width: 100%;
-  padding-bottom: 4px;
-}
-
 .heatmap {
-  --cols: 8;
-  --cell: 12px;
+  /* Height of a day (and min width). A full year of weeks fills the card
+     with nearly-square cells; fewer months stretch the columns to 100%. */
+  --year-cell: 12px;
   --gap: 3px;
+  --cols: 8;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: max-content;
-  min-width: 100%;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .heatmap__x {
   display: flex;
   gap: 4px;
+  min-width: 0;
 }
 
 .heatmap__x-spacer {
   width: 28px;
   flex: none;
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--p-card-background, var(--app-surface, #1e1e1e));
 }
 
 .heatmap__months {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(var(--cols), var(--cell));
+  grid-template-columns: repeat(var(--cols), minmax(var(--year-cell), 1fr));
   gap: var(--gap);
+  min-width: 0;
 }
 
 .heatmap__month {
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   color: var(--app-muted);
   white-space: nowrap;
@@ -56,18 +52,15 @@
   display: flex;
   gap: 4px;
   align-items: stretch;
+  min-width: 0;
 }
 
 .heatmap__weekdays {
   width: 28px;
   flex: none;
-  position: sticky;
-  left: 0;
-  z-index: 1;
   display: grid;
-  grid-template-rows: repeat(7, var(--cell));
+  grid-template-rows: repeat(7, var(--year-cell));
   gap: var(--gap);
-  background: var(--p-card-background, var(--app-surface, #1e1e1e));
 
   span {
     display: flex;
@@ -79,36 +72,44 @@
 }
 
 .heatmap__grid {
+  flex: 1;
   display: grid;
-  grid-template-columns: repeat(var(--cols), var(--cell));
-  grid-template-rows: repeat(7, var(--cell));
+  grid-template-columns: repeat(var(--cols), minmax(var(--year-cell), 1fr));
+  grid-template-rows: repeat(7, var(--year-cell));
   grid-auto-flow: column;
   gap: var(--gap);
+  min-width: 0;
 }
 
 .heatmap__cell {
-  width: var(--cell);
-  height: var(--cell);
+  width: 100%;
+  height: 100%;
+  min-width: 0;
   border-radius: 2px;
-  background: var(--app-border);
+  background: color-mix(in srgb, var(--app-border) 70%, var(--app-surface));
 
   &[data-level='0'] {
-    background: color-mix(in srgb, var(--app-border) 55%, transparent);
+    background: color-mix(in srgb, var(--app-border) 70%, var(--app-surface));
   }
+  /* Emerald — 30% indigo on dark looked the same as an empty cell. */
   &[data-level='1'] {
-    background: color-mix(in srgb, var(--app-primary) 30%, transparent);
+    background: #34d399;
   }
   &[data-level='2'] {
-    background: color-mix(in srgb, var(--app-primary) 55%, transparent);
+    background: #10b981;
   }
   &[data-level='3'] {
-    background: color-mix(in srgb, var(--app-primary) 78%, transparent);
+    background: #059669;
   }
   &[data-level='4'] {
-    background: var(--app-primary);
+    background: #047857;
   }
 
-  &--future {
+  &--future[data-level='0'] {
+    background: color-mix(in srgb, var(--app-border) 45%, var(--app-surface));
+  }
+
+  &--out {
     visibility: hidden;
   }
 }

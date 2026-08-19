@@ -2,23 +2,26 @@ import { TestBed } from '@angular/core/testing';
 import { StudyHeatmap } from './study-heatmap';
 
 describe('StudyHeatmap', () => {
-  it('builds weeks from the account month through today', async () => {
+  it('fills from account day through 31 Dec and paints reviewed days', async () => {
     await TestBed.configureTestingModule({
       imports: [StudyHeatmap],
     }).compileComponents();
     const fixture = TestBed.createComponent(StudyHeatmap);
-    fixture.componentRef.setInput('startedAt', '2026-08-01');
+    fixture.componentRef.setInput('startedAt', '2026-08-18');
+    fixture.componentRef.setInput('endedAt', '2026-12-31');
     fixture.componentRef.setInput('today', '2026-08-18');
     fixture.componentRef.setInput('data', { '2026-08-18': 2 });
     fixture.detectChanges();
-    const cmp = fixture.componentInstance as any;
-    expect(cmp.columns().length).toBeGreaterThan(0);
-    const today = cmp
-      .columns()
-      .flat()
-      .find((c: { date: string }) => c.date === '2026-08-18');
+    const cells = (fixture.componentInstance as any).columns().flat();
+    const today = cells.find((c: { date: string }) => c.date === '2026-08-18');
+    const yearEnd = cells.find((c: { date: string }) => c.date === '2026-12-31');
+    const beforeStart = cells.find((c: { date: string }) => c.date === '2026-08-17');
     expect(today.count).toBe(2);
     expect(today.level).toBe(1);
+    expect(today.outOfRange).toBe(false);
+    expect(yearEnd.outOfRange).toBe(false);
+    expect(yearEnd.future).toBe(true);
+    expect(beforeStart.outOfRange).toBe(true);
   });
 
   it('maps counts to intensity levels 0–4', async () => {
@@ -37,20 +40,42 @@ describe('StudyHeatmap', () => {
     expect(toLevel(10)).toBe(4);
   });
 
-  it('does not count future days even if data exists', async () => {
+  it('keeps later days of the year visible but without counts', async () => {
     await TestBed.configureTestingModule({
       imports: [StudyHeatmap],
     }).compileComponents();
     const fixture = TestBed.createComponent(StudyHeatmap);
-    fixture.componentRef.setInput('startedAt', '2026-08-01');
+    fixture.componentRef.setInput('startedAt', '2026-08-18');
+    fixture.componentRef.setInput('endedAt', '2026-12-31');
     fixture.componentRef.setInput('today', '2026-08-18');
-    fixture.componentRef.setInput('data', { '2026-08-25': 10 });
+    fixture.componentRef.setInput('data', {});
     fixture.detectChanges();
-    const future = (fixture.componentInstance as any)
+    const later = (fixture.componentInstance as any)
       .columns()
       .flat()
-      .filter((c: { future: boolean }) => c.future);
-    expect(future.length).toBeGreaterThan(0);
-    expect(future.every((c: { count: number; level: number }) => c.count === 0 && c.level === 0)).toBe(true);
+      .find((c: { date: string }) => c.date === '2026-08-25');
+    expect(later.future).toBe(true);
+    expect(later.outOfRange).toBe(false);
+    expect(later.count).toBe(0);
+    expect(later.level).toBe(0);
+  });
+
+  it('still paints a day that the API marked after local today', async () => {
+    await TestBed.configureTestingModule({
+      imports: [StudyHeatmap],
+    }).compileComponents();
+    const fixture = TestBed.createComponent(StudyHeatmap);
+    fixture.componentRef.setInput('startedAt', '2026-08-18');
+    fixture.componentRef.setInput('endedAt', '2026-12-31');
+    fixture.componentRef.setInput('today', '2026-08-18');
+    fixture.componentRef.setInput('data', { '2026-08-19': 1 });
+    fixture.detectChanges();
+    const nextDay = (fixture.componentInstance as any)
+      .columns()
+      .flat()
+      .find((c: { date: string }) => c.date === '2026-08-19');
+    expect(nextDay.count).toBe(1);
+    expect(nextDay.level).toBe(1);
+    expect(nextDay.future).toBe(false);
   });
 });

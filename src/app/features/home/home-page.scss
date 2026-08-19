@@ -12,13 +12,12 @@
 }
 
 :host ::ng-deep .dash-card {
-  overflow: hidden;
+  overflow-x: auto;
   min-width: 0;
 
   .p-card-body,
   .p-card-content {
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: hidden;
     min-width: 0;
     max-width: 100%;
   }

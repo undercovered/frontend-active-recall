@@ -40,9 +40,11 @@ describe('DashboardApi', () => {
     const api = TestBed.inject(DashboardApi);
     const http = TestBed.inject(HttpTestingController);
     const payload = {
-      startedAt: '2026-03-01',
+      startedAt: '2026-03-22',
+      endedAt: '2026-12-31',
       today: '2026-08-18',
       days: { '2026-08-18': 2 },
+      attempts: ['2026-08-18T22:00:00.000Z'],
     };
     const pending = firstValueFrom(api.streak());
     const req = http.expectOne(`${environment.apiUrl}/dashboard/streak`);

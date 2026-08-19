@@ -33,6 +33,7 @@ describe('HomePage', () => {
             streak: () =>
               of({
                 startedAt: '2026-08-01',
+                endedAt: '2026-12-31',
                 today: '2026-08-17',
                 days: {},
               }),
@@ -93,8 +94,10 @@ describe('HomePage', () => {
             streak: () =>
               of({
                 startedAt: '2026-08-01',
+                endedAt: '2026-12-31',
                 today: '2026-08-17',
                 days: { '2026-08-17': 1 },
+                attempts: ['2026-08-17T15:00:00.000Z'],
               }),
           },
         },
@@ -110,5 +113,6 @@ describe('HomePage', () => {
     const page = fixture.componentInstance as any;
     expect(page.deckCounts('s1')).toEqual({ dueToday: 0, inProgress: 4 });
     expect(page.deckCounts('missing')).toEqual({ dueToday: 0, inProgress: 0 });
+    expect(page.heatmapDays()).toEqual({ '2026-08-17': 1 });
   });
 });

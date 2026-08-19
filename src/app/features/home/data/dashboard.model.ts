@@ -14,6 +14,9 @@ export interface DashboardStats {
 
 export interface StudyStreak {
   startedAt: string;
+  endedAt: string;
   today: string;
   days: Record<string, number>;
+  /** ISO timestamps of each review attempt (bucketed locally on the client). */
+  attempts?: string[];
 }
